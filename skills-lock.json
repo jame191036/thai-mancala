@@ -1,0 +1,187 @@
+{
+  "version": 2,
+  "skills": {
+    "phaser-analyze": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-analyze/SKILL.md",
+      "computedHash": "d8a00ae640169b920f156dcb0d8e9930d0eebc5971d5a06a5ddb91b75ccb4f11"
+    },
+    "phaser-animation": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-animation/SKILL.md",
+      "computedHash": "f6e6adb9b35626bd89b5bd654df57a9f1c2b5ec7f0fa472a23db4857606a37ea"
+    },
+    "phaser-architect": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-architect/SKILL.md",
+      "computedHash": "5838b087d4f9ba36f63fa4c5a9951a937bab237f0c187ccdd942fe0dbcdc9a53"
+    },
+    "phaser-asset-advisor": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-asset-advisor/SKILL.md",
+      "computedHash": "8c0c23b9c951b6980d8fef5409b899d44a92a381a0b1bca57fe3134dde066bd8"
+    },
+    "phaser-audio": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-audio/SKILL.md",
+      "computedHash": "1d1ea77659f701799ab2971567d037b1869e2d67135527c8a4882e7245e21cdc"
+    },
+    "phaser-brainstorm": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-brainstorm/SKILL.md",
+      "computedHash": "be289e0c479e278f2fda77803cd7b4eec64c8f5141e9d5be3db464b795d4bf95"
+    },
+    "phaser-build": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-build/SKILL.md",
+      "computedHash": "cbb73348c02b0ec46771a63681b180b5e5b73099ae63b4660faea4add2c82917"
+    },
+    "phaser-coder": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-coder/SKILL.md",
+      "computedHash": "6668695949bcf852a9d01c6d49eb9f878c892538dc57e81f4031a98581f95cb9"
+    },
+    "phaser-debugger": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-debugger/SKILL.md",
+      "computedHash": "b15920a9012261d10b62da40707d670cdd6d4b79c9a8c5fc9c1b7f7481109086"
+    },
+    "phaser-feedback": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-feedback/SKILL.md",
+      "computedHash": "0612d8b144dfdce9696596446309ac42b39202900665f721cebf27c0d02f9812"
+    },
+    "phaser-fx": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-fx/SKILL.md",
+      "computedHash": "644afc20d1e2b0ea536874317e78e6ae8fd2b01402ecef3954c8d00e0e506c38"
+    },
+    "phaser-gameobj": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-gameobj/SKILL.md",
+      "computedHash": "ef86200d4afe0eb5ea23895fde1877e15152f680a847766250b4bf47f87614f9"
+    },
+    "phaser-gdd": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-gdd/SKILL.md",
+      "computedHash": "6df1b73b40253e8538723d199e7d9a2ee83c67a9ac7c80ef2f328cdcd6034445"
+    },
+    "phaser-init": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-init/SKILL.md",
+      "computedHash": "c55e2d13a13fe10e6b5ce0c906548f93f3076bd85ce705742b3290b8a71e41f8"
+    },
+    "phaser-input": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-input/SKILL.md",
+      "computedHash": "d007db5a5a938b9b68ad7567ee74fafe20b403ea06bb31793fd36115849d2147"
+    },
+    "phaser-matter": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-matter/SKILL.md",
+      "computedHash": "faafd3c94ad58ab748b8937b0562171cf0b0b412b6549534c3d4b4e9f42d9e0e"
+    },
+    "phaser-migrate": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-migrate/SKILL.md",
+      "computedHash": "1b3eda25471269666242e2159233196b3bcb0403e33446ee391bdef8966d0dba"
+    },
+    "phaser-mobile": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-mobile/SKILL.md",
+      "computedHash": "5adce93d863000541cd75c558deaffba48b4dfaa6288d178c01a825e3c082210"
+    },
+    "phaser-particles": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-particles/SKILL.md",
+      "computedHash": "91758122165a65be73a54eb69d6763190c4c0644c7067fe5fa041499c075187b"
+    },
+    "phaser-physics": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-physics/SKILL.md",
+      "computedHash": "d99d3ede176157a1bba281c52985412cfe096be8b8266708b81c45185cbd9184"
+    },
+    "phaser-playtest": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-playtest/SKILL.md",
+      "computedHash": "3d4b8c573021136a8091120b23a2d41619bd15d8f0e529f0ef3fbaf25797e7db"
+    },
+    "phaser-release": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-release/SKILL.md",
+      "computedHash": "a5e0e080f436210732764bf0b36cee094675a7dcc88a3473dcf3eadd9a5a99bb"
+    },
+    "phaser-saveload": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-saveload/SKILL.md",
+      "computedHash": "35546f332675e50fe5110800b6b292061f1fb81934bd64e9c8fe5fa3f451f13a"
+    },
+    "phaser-scene": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-scene/SKILL.md",
+      "computedHash": "6d5b991adca7f28a8e57f857e3a9bf1bd0ff89662997d718acd9e15acf336589"
+    },
+    "phaser-tilemap": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-tilemap/SKILL.md",
+      "computedHash": "cc970783397c74d37a0c5c20f1dc04ec80bd2360874963594bb184bc16e2dd5d"
+    },
+    "phaser-ui": {
+      "source": "Yakoub-ai/phaser4-gamedev",
+      "commit": "28c9380798950c5eb9820fa19a1b55f5eee2ac0a",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-ui/SKILL.md",
+      "computedHash": "019d75d26312eb6ea361614acd9223a8698c0fb4597f133c233e7650317ee64e"
+    }
+  }
+}

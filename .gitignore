@@ -1,0 +1,13 @@
+# Third-party agent skills: install locally (see README). Upstream repo has no license,
+# so these files must not be redistributed in this public repo.
+.claude/skills/phaser-*/
+.agents/
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Build / deps / secrets
+node_modules/
+dist/
+.env
+.env.*
