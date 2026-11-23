@@ -78,22 +78,24 @@ Short game:  [Menu] -> [1 round] -> [Result] -> [Rematch?] --yes--> [1 round] ..
                                                      |
                                                      no --> [Menu]
 
-Full game:   [Menu] -> [Round 1] -> [Refill pits from store; unfillable pits become DEAD]
-                           ^                         |
-                           |              both can fill >= 1 pit?
-                           +--------- yes -----------+
-                                                     no --> [GAME OVER: who could not fill loses]
+Full game:   [Menu: pick 3/5/7 rounds] -> [Round 1] -> [Round end]
+                                             ^              |
+                                             |    someone has < 7 seeds? --yes--> [GAME OVER: they lose (R15)]
+                                             |              | no
+                                             |    was it the last round? --yes--> [GAME OVER: more seeds wins (R16)]
+                                             |              | no
+                                             +-- [Refill pits; unfillable pits become DEAD]
 ```
 
 - **เกมสั้น:** 1 รอบ ใช้เวลาประมาณ 5–10 นาที <!-- ASSUMPTION -->
-- **เกมเต็ม:** หลายรอบ ใช้เวลาประมาณ 20–45 นาที บันทึกระหว่างรอบไว้แล้วกลับมาเล่นต่อได้ <!-- ASSUMPTION -->
+- **เกมเต็ม:** 3, 5 หรือ 7 รอบ (R16) แบบ 3 รอบใช้เวลาประมาณ 15–30 นาที บันทึกระหว่างรอบไว้แล้วกลับมาเล่นต่อได้ <!-- ASSUMPTION: เวลาต่อรอบ -->
 
 ### Win / Lose Conditions
 
 | โหมด | ชนะ | แพ้ | เสมอ |
 |---|---|---|---|
 | เกมสั้น (1 รอบ) | จบรอบแล้วมีเม็ดในเรือนมากกว่า | มีเม็ดในเรือนน้อยกว่า | 49 : 49 |
-| เกมเต็ม (หลายรอบ) | ตอนเติมหลุมก่อนเริ่มรอบใหม่ คู่แข่งเติมไม่ได้แม้แต่หลุมเดียว (เม็ดในเรือนไม่ถึง 7) | ตัวเองเติมไม่ได้แม้แต่หลุมเดียว | เกิดขึ้นไม่ได้ เพราะมีเม็ดรวม 98 เม็ด จะน้อยกว่า 7 ทั้งคู่ไม่ได้ |
+| เกมเต็ม (3/5/7 รอบ) | คู่แข่งเหลือเม็ดในเรือนไม่ถึง 7 ตอนจบรอบไหนก็ได้ (R15) หรือ จบรอบสุดท้ายแล้วมีเม็ดในเรือนมากกว่า (R16) | กรณีกลับกัน | 49 : 49 ตอนจบรอบสุดท้าย |
 
 หลังจบเกมมีปุ่ม "เล่นอีกครั้ง" และ "กลับเมนู" ระหว่างเกมมีปุ่ม "ยอมแพ้" ให้กดได้ <!-- ASSUMPTION -->
 
@@ -119,7 +121,8 @@ Full game:   [Menu] -> [Round 1] -> [Refill pits from store; unfillable pits bec
 | R12 | โหมด | มีให้เลือกทั้ง **เกมสั้น (1 รอบ)** และ **เกมเต็ม (หลายรอบ มีหลุมตาย)** | ✅ ยืนยัน |
 | R13 | เติมหลุม (เกมเต็ม) | เอาเม็ดจากเรือนเติมหลุมฝั่งตัวเองหลุมละ 7 **เริ่มจากหลุมที่อยู่ใกล้เรือนตัวเอง** หลุมที่เติมไม่ถึงเป็น **หลุมตาย** สำหรับรอบนั้น | ✅ ยืนยัน |
 | R14 | เริ่มรอบใหม่ (เกมเต็ม) | **ผู้แพ้รอบก่อน**เดินก่อน | ✅ ยืนยัน |
-| R15 | แพ้เกมเต็ม | เติมไม่ได้แม้แต่หลุมเดียว (เม็ดในเรือนน้อยกว่า 7) | ✅ ยืนยัน |
+| R15 | แพ้เกมเต็ม | เติมไม่ได้แม้แต่หลุมเดียว (เม็ดในเรือนน้อยกว่า 7) แพ้ทันที แม้ยังไม่ครบจำนวนรอบ | ✅ ยืนยัน |
+| R16 | จำนวนรอบเกมเต็ม | เลือกได้ **3, 5 หรือ 7 รอบ (ค่าเริ่มต้น 3)** จบรอบสุดท้ายแล้ว**ใครมีเม็ดในเรือนมากกว่าชนะ** ถ้า 49:49 เสมอ ถ้า R15 และ R16 เกิดพร้อมกันในรอบสุดท้าย ให้ใช้ R15 | ✅ ยืนยัน 2026-11-23 (ตัวเลข 3/5/7 ปรับได้หลัง playtest) |
 
 **รายละเอียดเพิ่มเติม (ผู้เขียนเสนอ เจ้าของโปรเจกต์ยืนยันแล้ว 2026-11-23)**
 
@@ -182,7 +185,7 @@ afterTurn(result):
   else:                            ROUND_END                                          # R10
 ```
 
-Rules engine เขียนเป็น TypeScript ล้วนที่ไม่ขึ้นกับ Phaser engine คืนค่าเป็นรายการ event (PICKUP, DROP, RELAY, CAPTURE, EXTRA_TURN, PASS, TURN_END, ROUND_END, REFILL, GAME_OVER) ให้ scene เอาไปเล่น animation ตามลำดับ วิธีนี้ทำให้ทดสอบกติกาด้วย unit test ได้โดยไม่ต้องเปิดเกม
+Rules engine อยู่ที่ `src/logic/` เขียนเป็น TypeScript ล้วนที่ไม่ขึ้นกับ Phaser engine คืนค่าเป็นรายการ step (`pickup`, `drop` ทีละเม็ด, `relay`, `capture`, `extraTurn`, `turnEnd`, `pass`, `roundEnd`, `gameOver`, `refill`, `deadPit`, `roundStart`) ให้ scene เอาไปเล่น animation ตามลำดับ วิธีนี้ทำให้ทดสอบกติกาด้วย unit test ได้โดยไม่ต้องเปิดเกม
 
 ### 3.4 จบรอบและเกมหลายรอบ (เกมเต็ม)
 
@@ -191,11 +194,13 @@ ROUND_END
   -> winner of round = player with more seeds in store (tie: none)
   -> Short game: show result. Done.
   -> Full game:
-       for each player: fill own pits with 7 seeds each, starting nearest own store (R13)
-                        pits that cannot be filled -> DEAD for this round
-                        leftover (<7) stays in store (A3)
-       if a player filled 0 pits -> GAME_OVER, that player loses (R15)
-       else next round; starter = loser of previous round (R14) / tie: A5
+       if a player has < 7 seeds (cannot fill 0 pits)  -> GAME_OVER, that player loses (R15)
+       else if this was round maxRounds (3/5/7)        -> GAME_OVER, more seeds wins, 49:49 draw (R16)
+       else:
+         for each player: fill own pits with 7 seeds each, starting nearest own store (R13)
+                          pits that cannot be filled -> DEAD for this round
+                          leftover (<7) stays in store (A3)
+         next round; starter = loser of previous round (R14) / tie: A5
 ```
 
 ตัวอย่าง: จบรอบด้วย P1 = 51 และ P2 = 47
@@ -286,7 +291,7 @@ ROUND_END
   - หว่านต่อยาวที่สุด (นับเป็นจำนวนทอด)
   - ชนะห่างมากที่สุด
 - **Replayability Hooks:** AI 3 ระดับ เกมเต็มที่พลิกเกมได้ด้วยหลุมตาย สถิติ และการชวนเพื่อนเล่นบนเครื่องเดียว หลัง v1 อาจมี "โจทย์หมากขุม" แบบ puzzle รายวัน <!-- ASSUMPTION -->
-- **Estimated Play Time:** เรียนกติกา 3 นาที เกมสั้น 5–10 นาที เกมเต็ม 20–45 นาที <!-- ASSUMPTION -->
+- **Estimated Play Time:** เรียนกติกา 3 นาที เกมสั้น 5–10 นาที เกมเต็ม 3 รอบ 15–30 นาที (5 รอบ 25–50 นาที, 7 รอบ 35–70 นาที) <!-- ASSUMPTION -->
 
 ---
 
@@ -302,7 +307,7 @@ ROUND_END
 [Main Menu] --> [Opponent: Local 2P | AI Easy | AI Medium | AI Hard]
                           |
                           v
-                [Rules: Short (1 round) | Full (multi-round, dead pits)]
+                [Rules: Short (1 round) | Full (3 / 5 / 7 rounds, dead pits)]
                           |
                           v
                  [Coin flip: who starts] --> [Game]
@@ -390,7 +395,7 @@ AI ทุกระดับใช้ rules engine ตัวเดียวกั
 |---|---|
 | Title | โลโก้ "หมากขุม" แบบตัวอักษรพิกเซล กระดานไม้ด้านล่างที่เม็ดหยอดเองช้า ๆ (attract mode) และข้อความ "แตะเพื่อเริ่ม" ซึ่งใช้ปลดล็อกเสียงบน iOS และขอเต็มจอบน Android ไปพร้อมกัน |
 | Main Menu | ปุ่มเรียงแนวตั้งบนแผ่นไม้ 9-slice |
-| Opponent / Rules | การ์ด 4 ใบสำหรับเลือกคู่แข่ง และ 2 ใบสำหรับเลือกกติกา พร้อมคำอธิบายสั้น ๆ |
+| Opponent / Rules | การ์ด 4 ใบสำหรับเลือกคู่แข่ง และ 2 ใบสำหรับเลือกกติกา พร้อมคำอธิบายสั้น ๆ ถ้าเลือกเกมเต็ม จะมีตัวเลือกจำนวนรอบ 3, 5 หรือ 7 (ค่าเริ่มต้น 3) |
 | Game | ตาม HUD ด้านบน |
 | Round End | เม็ดไหลจากเรือนกลับลงหลุม หลุมตายถูกปิดทีละหลุม และแสดงว่าใครเริ่มรอบถัดไป |
 | Result | ผลแพ้ชนะ จำนวนเม็ด กินได้มากที่สุด หว่านต่อยาวที่สุด |
@@ -511,7 +516,7 @@ AI ทุกระดับใช้ rules engine ตัวเดียวกั
 | **Phaser Version** | `phaser` 4.x (skill ระบุ 4.2.1 stable ให้ตรวจเวอร์ชันล่าสุดตอน scaffold) |
 | **Language / Build** | TypeScript (strict) + Vite <!-- ASSUMPTION --> |
 | **Physics Engine** | **None** เป็นเกมกระดาน การเคลื่อนไหวทั้งหมดใช้ tween ไม่ต้องจำลองฟิสิกส์ |
-| **Rules engine** | TypeScript ล้วน (`src/rules/`) ไม่ import Phaser เป็น deterministic function แบบ `(state, move) → { state, events[] }` ทดสอบด้วย Vitest |
+| **Rules engine** | TypeScript ล้วน (`src/logic/`: `types.ts`, `board.ts`, `rules.ts`) ไม่ import Phaser เป็น deterministic function แบบ `playMove(state, pit) → { state, steps[] }` ทดสอบด้วย Vitest |
 | **AI** | อยู่ใน Web Worker (`src/ai/`) และใช้ rules engine ตัวเดียวกัน สถานะเป็น `Int8Array(16)` + dead mask เพื่อให้ search ได้เร็ว |
 | **Persistence** | localStorage เก็บ settings, stats และ save ของเกมเต็ม ใส่ version number ไว้ใน save ทุกครั้ง |
 | **Input layer** | แปลงเมาส์ การแตะ คีย์บอร์ด และจอย ให้เป็น action กลาง (`selectPrev`, `selectNext`, `selectPit(i)`, `confirm`, `cancel`, `speed`, `pause`) scene ฟังแค่ action เหล่านี้ |
@@ -616,10 +621,11 @@ Chrome, Edge, Firefox และ Safari 2 เวอร์ชันล่าสุ
 | AC-R12 | แพ้เกมเต็มเมื่อเติมไม่ได้ | phase | F11: GAME_OVER, P1 ชนะ |
 | AC-R13 | เกมสั้นเสมอ 49:49 | result | F12: `result == DRAW` |
 | AC-R14 | เม็ดไม่หายหรือเกิน | `sum(pits)` | สุ่มเล่น 10,000 เกม ผลรวมเป็น 98 ทุก event |
-| AC-R15 | เกมจบเสมอ | จำนวนตาและจำนวนครั้งที่หยอด | สุ่มเล่น 10,000 เกมจบทุกเกม หยอดต่อตาไม่เกิน 5,000 ตาต่อรอบไม่เกิน 2,000 |
+| AC-R15 | เกมจบเสมอ | จำนวนตาและจำนวนครั้งที่หยอด | สุ่มเล่นเกมสั้น 10,000 เกม และเกมเต็มแบบ 3/5/7 รอบอย่างละ 1,000 เกม จบทุกเกม หยอดต่อตาไม่เกิน 5,000 ตาต่อรอบไม่เกิน 2,000 |
 | AC-R16 | เลือกหลุมที่ไม่ถูกกติกาไม่ได้ | `legalMoves` | หลุมว่าง หลุมตาย และหลุมฝั่งคู่แข่งไม่อยู่ใน `legalMoves` |
 | AC-R17 | ฝั่ง P2: ลงเรือน P2, ข้ามเรือน P1 และกินได้ | `pits[7]`, `pits[15]` | F13: `pits[7] == 0`, `pits[15] == 7` |
 | AC-R18 | หว่านเกินรอบโดยไม่ข้ามหลุมต้นทาง (A1) | `pits[0]`, `pits[7]` | F14: `pits[0] == 0`, `pits[7] == 3` |
+| AC-R19 | เกมเต็มจบเมื่อครบจำนวนรอบ (R16) | phase, winner, endReason | F15: รอบ 3/3 จบ 51:47 ได้ gameOver, P1 ชนะ, `roundLimit` · F16: รอบ 3/3 จบ 49:49 ได้เสมอ · รอบ 1–2 ของ 3 ยังเป็น `roundOver` |
 | AC-AI1 | AI ยากชนะ AI ง่าย | อัตราชนะ | 200 เกม สลับคนเริ่ม ชนะอย่างน้อย 80% |
 | AC-AI2 | AI กลางชนะ AI สุ่ม | อัตราชนะ | 200 เกม ชนะอย่างน้อย 90% |
 | AC-AI3 | AI ยากคิดเร็วพอ | เวลาตอบของ worker | p95 ≤ 500 ms บนเครื่องทดสอบระดับกลาง |
@@ -650,10 +656,14 @@ Chrome, Edge, Firefox และ Safari 2 เวอร์ชันล่าสุ
 
 ## Appendix A — คำถามที่ยังเปิดอยู่ (ควรตอบก่อน Alpha)
 
-**ตัดสินแล้ว 2026-11-23:** A1–A6 ใช้ตามที่เสนอ, มือถือแตะ 2 ครั้งเพื่อยืนยัน, integer scale อย่างเดียว, รองรับจอย (§3.8.1), roadmap ออนไลน์ (Appendix D)
+**ตัดสินแล้ว 2026-11-23:** A1–A6 ใช้ตามที่เสนอ, มือถือแตะ 2 ครั้งเพื่อยืนยัน, integer scale อย่างเดียว, รองรับจอย (§3.8.1), roadmap ออนไลน์ (Appendix D), **เกมเต็มจำกัดจำนวนรอบ (R16)**
 
 1. วิธีแสดงตัวอักษรไทย ต้องทำ prototype ก่อนตัดสิน (§10)
 2. AI มีตัวละครหรือบุคลิกไหม
+3. ~~เกมเต็มอาจไม่มีวันจบ~~ **ตัดสินแล้ว: ใช้ตัวเลือก (ข) จำกัดจำนวนรอบ ได้เป็น R16** ที่มาของการตัดสินใจ (พบตอนทำ M0 วันที่ 2026-11-23)
+   - **ผลวัด:** สุ่มเล่น 100 เกมตาม R15 อย่างเดียว ไม่จบสักเกมภายใน 300 รอบ ใน 2,000 รอบ ฝ่ายที่แพ้รอบเหลือเม็ดในเรือนน้อยสุด 14 ค่ากลาง 42 ไม่เคยต่ำกว่า 7 ส่วนหลุมตายเกิดใน 97% ของรอบ
+   - **ตัวเลือกที่ไม่ได้เลือก:** (ก) คงไว้ตามเดิม, (ค) ตั้งเป้าจำนวนเม็ดตามบันทึกปี 1836, (ง) ปรับเงื่อนไขแพ้
+   - **ยังต้องทำ:** ตอน Alpha ให้ AI เล่นกันเพื่อยืนยันว่า 3 รอบใช้เวลาจริงประมาณ 15–30 นาที แล้วปรับตัวเลือก 3/5/7 ถ้าจำเป็น
 
 ## Appendix B — แหล่งอ้างอิงกติกา
 
