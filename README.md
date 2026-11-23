@@ -6,7 +6,7 @@
 - เกณฑ์ตรวจรับ: [docs/acceptance-criteria.md](docs/acceptance-criteria.md)
 - บันทึกโปรเจกต์สำหรับ Claude Code: [CLAUDE.md](CLAUDE.md)
 
-> สถานะ: มีเอกสารออกแบบแล้ว ยังไม่มีโค้ดเกม
+> สถานะ: มีเอกสารออกแบบ และ scaffold Phaser 4 เสร็จแล้ว (`npm run verify` ผ่าน) ยังไม่มีโค้ดเกมหมากขุม ที่เห็นเป็น starter loop ของ template
 
 ## ตั้งค่าเครื่องใหม่
 
@@ -53,6 +53,25 @@ git clone https://github.com/mankidev/codixel.git ~/.claude/skills/codixel
 
 > cmd ไม่รู้จัก `~` ถ้าพิมพ์ `~/.claude/...` ใน cmd จะได้โฟลเดอร์ชื่อ `~` อยู่ในโปรเจกต์ ให้ใช้ `%USERPROFILE%` แทน
 
-### 4. เปิดโปรเจกต์ใน Claude Code
+### 4. ติดตั้ง dependency และรันเกม
+
+ต้องใช้ Node.js 20.19 ขึ้นไป
+
+```bat
+npm install
+npx playwright install chromium
+npm run dev
+```
+
+`npx playwright install chromium` รันครั้งเดียวต่อเครื่อง ใช้สำหรับ playtest อัตโนมัติ ส่วน `npm run dev` จะเปิด dev server ให้
+
+| คำสั่ง | ใช้ทำ |
+|---|---|
+| `npm run dev` | dev server |
+| `npm test` | unit tests (Vitest) |
+| `npm run verify` | typecheck + unit tests + playtest บน production build ต้องผ่านก่อน commit |
+| `npm run build` | build ไปที่ `dist/` |
+
+### 5. เปิดโปรเจกต์ใน Claude Code
 
 Claude Code อ่าน [CLAUDE.md](CLAUDE.md) อัตโนมัติ จึงรู้กติกาที่ตกลงไว้, roadmap และงานขั้นต่อไป พิมพ์ `/` แล้วควรเห็น `phaser-*` และ `codixel` ในรายการ skill
