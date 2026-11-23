@@ -59,6 +59,11 @@ export function replaySteps(before: readonly number[], steps: readonly Step[]): 
         pits[storeOf(s.player)] -= s.seeds;
         pits[s.pit] += s.seeds;
         break;
+      case 'sweep':
+        if (pits[s.pit] !== s.seeds) fail(`pit ${s.pit} holds ${pits[s.pit]}, sweep says ${s.seeds}`);
+        pits[s.pit] = 0;
+        pits[storeOf(s.player)] += s.seeds;
+        break;
       default:
         break;
     }

@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest';
 import { TOTAL_SEEDS, storeOf } from '../src/logic/board';
 import { createGame, legalMoves, playMove, startNextRound } from '../src/logic/rules';
-import type { GameMode, GameState, MoveResult } from '../src/logic/types';
+import type { GameMode, GameState, MoveResult, Ruleset } from '../src/logic/types';
 import { replaySteps, sum } from './helpers';
 
 /** mulberry32: tiny deterministic PRNG. */
@@ -46,6 +46,20 @@ function checkTransition(before: GameState, result: MoveResult): string | null {
     if (before.dead[s.pit]) return `seed dropped into dead pit ${s.pit}`;
   }
   if (after.dead.some((d, i) => d && after.pits[i] !== 0)) return 'a dead pit holds seeds';
+
+  // Each ruleset only uses its own steps.
+  const kinds = new Set(result.steps.map((s) => s.kind));
+  if (before.ruleset === 'traditional' && (kinds.has('sideEmpty') || kinds.has('sweep'))) {
+    return 'sideEmpty/sweep under the traditional ruleset';
+  }
+  if (before.ruleset === 'video') {
+    if (kinds.has('pass')) return 'pass step under the video ruleset';
+    if (kinds.has('relay')) return 'relay under the video ruleset (only the store gives another go)';
+    // R17: while the round goes on, both sides always hold seeds.
+    if (after.phase === 'playing' && (sum(after.pits.slice(0, 7)) === 0 || sum(after.pits.slice(8, 15)) === 0)) {
+      return 'still playing with an empty side under the video ruleset';
+    }
+  }
   return null;
 }
 
@@ -58,12 +72,18 @@ interface Totals {
   failure: string | null;
 }
 
-function runRandomGames(mode: GameMode, games: number, maxRounds: number, seed: number): Totals {
+function runRandomGames(
+  mode: GameMode,
+  games: number,
+  maxRounds: number,
+  seed: number,
+  ruleset: Ruleset = 'traditional',
+): Totals {
   const random = rng(seed);
   const t: Totals = { games, finished: 0, rounds: 0, roundsWithDeadPits: 0, maxTurnsInRound: 0, failure: null };
 
   for (let g = 0; g < games && !t.failure; g++) {
-    let state = createGame(mode, random() < 0.5 ? 0 : 1, { maxRounds });
+    let state = createGame(mode, random() < 0.5 ? 0 : 1, { maxRounds, ruleset });
     let rounds = 1;
     let turns = 0;
     t.rounds += 1;
@@ -125,5 +145,20 @@ describe('random play (fixed seed)', () => {
     const t = runRandomGames('full', 300, 20, 2026);
     expect(t.failure).toBeNull();
     expect(t.finished).toBe(300);
+  });
+});
+
+describe('random play, R17 "video" ruleset (fixed seed)', () => {
+  it('10,000 short games: all finish, every invariant holds', { timeout: 60_000 }, () => {
+    const t = runRandomGames('short', 10_000, 1, 1723, 'video');
+    expect(t.failure).toBeNull();
+    expect(t.finished).toBe(10_000);
+  });
+
+  it.each([3, 7])('1,000 full games of %i rounds: all finish, refills keep invariants', { timeout: 60_000 }, (rounds) => {
+    const t = runRandomGames('full', 1_000, rounds, 4000 + rounds, 'video');
+    expect(t.failure).toBeNull();
+    expect(t.finished).toBe(1_000);
+    expect(t.roundsWithDeadPits).toBeGreaterThan(0);
   });
 });

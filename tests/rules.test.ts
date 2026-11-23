@@ -233,6 +233,115 @@ describe('R8 extra turn, R9 pass, A6', () => {
   });
 });
 
+// ── R17: "แบบตามวิดีโอ" ruleset ──────────────────────────────────────────────
+// Only landing in your own store lets you keep going (no relay); the round ends as soon as
+// a side is empty and the leftovers go to their owner. Capture and the rest are unchanged.
+
+describe('R17 ruleset "video": no relay, extra turn only from the store, a side runs out → round ends', () => {
+  const video = { ruleset: 'video' } as const;
+
+  it('traditional is the default; video is opt-in', () => {
+    expect(createGame('short', P1).ruleset).toBe('traditional');
+    expect(createGame('full', P1, video).ruleset).toBe('video');
+  });
+
+  it('F17: last seed in one of your own pits that has seeds → the turn ends (no relay)', () => {
+    const { state, steps } = play(custom({ 0: 2, 2: 3, 9: 1 }, P1, video), 0);
+    expect(steps).toEqual<Step[]>([
+      { kind: 'pickup', player: P1, pit: 0, seeds: 2 },
+      { kind: 'drop', player: P1, pit: 1, pitSeeds: 1, handSeeds: 1 },
+      { kind: 'drop', player: P1, pit: 2, pitSeeds: 4, handSeeds: 0 },
+      { kind: 'turnEnd', player: P1, pit: 2, reason: 'occupiedPit' },
+    ]);
+    expect(state.pits).toEqual(board({ 1: 1, 2: 4, 9: 1 }));
+    expect(state.current).toBe(P2);
+  });
+
+  it('last seed in an opponent pit that has seeds → the turn ends too', () => {
+    const { state, steps } = play(custom({ 6: 2, 8: 1, 3: 4 }, P1, video), 6);
+    expect(find(steps, 'relay')).toBeUndefined();
+    expect(find(steps, 'turnEnd')).toMatchObject({ pit: 8, reason: 'occupiedPit' });
+    expect(state.pits).toEqual(board({ 3: 4, 7: 1, 8: 2 }));
+    expect(state).toMatchObject({ phase: 'playing', current: P2 });
+  });
+
+  it('the same move under the traditional rules relays instead (contrast with F17)', () => {
+    const { steps } = play(custom({ 0: 2, 2: 3, 9: 1 }, P1), 0);
+    expect(find(steps, 'relay')).toMatchObject({ pit: 2, seeds: 4 });
+  });
+
+  it('landing in your own store is the only way to go again — and you may pick ANY pit on your side', () => {
+    const { state, steps } = play(custom({ 4: 3, 0: 2, 10: 1 }, P1, video), 4);
+    expect(kinds(steps)).toEqual(['pickup', 'drop', 'drop', 'drop', 'extraTurn']);
+    expect(state.current).toBe(P1);
+    expect(legalMoves(state)).toEqual([0, 5, 6]);
+  });
+
+  it('capture of the opposite pit still applies (R6)', () => {
+    const { steps } = play(custom({ 2: 1, 11: 6, 0: 1, 9: 1 }, P1, video), 2);
+    expect(find(steps, 'capture')).toMatchObject({ pit: 3, opposite: 11, captured: 6, toStore: 7 });
+  });
+
+  it('F18: a capture that empties the opponent side ends the round; P1 keeps its own seeds', () => {
+    const { state, steps } = play(custom({ 5: 1, 8: 2, 0: 3 }, P1, video), 5);
+    expect(steps).toEqual<Step[]>([
+      { kind: 'pickup', player: P1, pit: 5, seeds: 1 },
+      { kind: 'drop', player: P1, pit: 6, pitSeeds: 1, handSeeds: 0 },
+      { kind: 'capture', player: P1, pit: 6, opposite: 8, captured: 2, toStore: 3 },
+      { kind: 'turnEnd', player: P1, pit: 6, reason: 'captured' },
+      { kind: 'sideEmpty', player: P2 },
+      { kind: 'sweep', player: P1, pit: 0, seeds: 3 },
+      { kind: 'roundEnd', round: 1, stores: [6, 0], winner: P1 },
+      { kind: 'gameOver', winner: P1, reason: 'singleRound' },
+    ]);
+    expect(state.pits).toEqual(board({ 7: 6 }));
+  });
+
+  it('F19: emptying your OWN side ends the round, even right after an extra turn; the opponent keeps theirs', () => {
+    const { state, steps } = play(custom({ 6: 1, 9: 2, 12: 3, 7: 10, 15: 5 }, P1, video), 6);
+    expect(kinds(steps)).toEqual(['pickup', 'drop', 'extraTurn', 'sideEmpty', 'sweep', 'sweep', 'roundEnd', 'gameOver']);
+    expect(find(steps, 'sideEmpty')?.player).toBe(P1);
+    expect(steps.filter((s) => s.kind === 'sweep')).toEqual([
+      { kind: 'sweep', player: P2, pit: 9, seeds: 2 },
+      { kind: 'sweep', player: P2, pit: 12, seeds: 3 },
+    ]);
+    expect(state.pits).toEqual(board({ 7: 11, 15: 10 }));
+    expect(state.lastRound).toEqual({ round: 1, stores: [11, 10], winner: P1 });
+  });
+
+  it('F20: in a full game the swept seeds count for the refill', () => {
+    const s = custom({ 6: 1, 9: 2, 12: 3, 7: 49, 15: 43 }, P1, { ...video, mode: 'full' });
+    const ended = play(s, 6).state;
+    expect(ended.phase).toBe('roundOver');
+    expect(ended.lastRound?.stores).toEqual([50, 48]); // P2's 2 + 3 were swept into its store
+    const { state } = startNextRound(ended);
+    expect(state.ruleset).toBe('video'); // the ruleset carries over to the next round
+    // P1 50 → 7 pits, 1 left; P2 48 → 6 pits, 6 left, pit 8 (farthest from its store) dead.
+    expect(state.pits).toEqual([7, 7, 7, 7, 7, 7, 7, 1, 0, 7, 7, 7, 7, 7, 7, 6]);
+    expect(state.dead.flatMap((d, i) => (d ? [i] : []))).toEqual([8]);
+    expect(state.current).toBe(P2); // loser of the round starts (R14)
+  });
+
+  it('both sides empty at once: no sweep needed', () => {
+    const { steps } = play(custom({ 6: 1, 7: 50, 15: 47 }, P1, video), 6);
+    expect(steps.filter((s) => s.kind === 'sideEmpty').map((s) => s.player)).toEqual([P1, P2]);
+    expect(find(steps, 'sweep')).toBeUndefined();
+  });
+
+  it('every opening move: no relay, and a playing state never has an empty side', () => {
+    for (const first of [P1, P2]) {
+      const start = createGame('short', first, video);
+      for (const pit of legalMoves(start)) {
+        const { state, steps } = play(start, pit);
+        expect(find(steps, 'relay')).toBeUndefined();
+        if (state.phase !== 'playing') continue;
+        expect(state.pits.slice(0, 7).some((n) => n > 0)).toBe(true);
+        expect(state.pits.slice(8, 15).some((n) => n > 0)).toBe(true);
+      }
+    }
+  });
+});
+
 // ── R10, R12: round end and the short game ───────────────────────────────────
 
 describe('R10 round end and R12 short game', () => {

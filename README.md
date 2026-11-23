@@ -6,7 +6,7 @@
 - เกณฑ์ตรวจรับ: [docs/acceptance-criteria.md](docs/acceptance-criteria.md)
 - บันทึกโปรเจกต์สำหรับ Claude Code: [CLAUDE.md](CLAUDE.md)
 
-> สถานะ: มีเอกสารออกแบบ และ scaffold Phaser 4 เสร็จแล้ว (`npm run verify` ผ่าน) ยังไม่มีโค้ดเกมหมากขุม ที่เห็นเป็น starter loop ของ template
+> สถานะ: เล่นได้ครบแบบ 2 คนเครื่องเดียว (เกมสั้นและเกมเต็ม) ด้วยกราฟิกชั่วคราว ยังไม่มี AI งานภาพจริง และเสียง
 
 ## ตั้งค่าเครื่องใหม่
 

@@ -1,5 +1,5 @@
 /**
- * หมากขุม rules engine. Source of truth: docs/GDD.md §3.1 (R1–R16, A1–A6).
+ * หมากขุม rules engine. Source of truth: docs/GDD.md §3.1 (R1–R17, A1–A6).
  * Never substitute Kalah or Oware rules.
  *
  * Pure TypeScript and deterministic: no Phaser import, no randomness, no mutation of the
@@ -29,6 +29,7 @@ import type {
   PitIndex,
   Player,
   RoundResult,
+  Ruleset,
   Step,
 } from './types';
 
@@ -54,7 +55,11 @@ export const DEFAULT_FULL_GAME_ROUNDS = 3;
 export interface GameOptions {
   /** Full game only: rounds to play before the seed count decides (R16). Default 3. */
   maxRounds?: number;
+  /** `traditional` (R1–R16, default) or `video` (R17). See `Ruleset` in types.ts. */
+  ruleset?: Ruleset;
 }
+
+export const DEFAULT_RULESET: Ruleset = 'traditional';
 
 function resolveMaxRounds(mode: GameMode, maxRounds: number | undefined): number {
   if (mode === 'short') return 1;
@@ -72,6 +77,7 @@ export function createGame(mode: GameMode, firstPlayer: Player, options: GameOpt
   const pits = Array.from({ length: BOARD_SIZE }, (_, i) => (isStore(i) ? 0 : SEEDS_PER_PIT));
   return {
     mode,
+    ruleset: options.ruleset ?? DEFAULT_RULESET,
     pits,
     dead: new Array<boolean>(BOARD_SIZE).fill(false),
     current: firstPlayer,
@@ -115,6 +121,7 @@ export function createCustomState(options: CustomStateOptions): GameState {
   }
   return {
     mode,
+    ruleset: options.ruleset ?? DEFAULT_RULESET,
     pits: [...pits],
     dead: deadFlags,
     current,
@@ -205,8 +212,14 @@ export function playMove(state: GameState, pit: PitIndex): MoveResult {
       break;
     }
 
-    // Last seed in a pit that already had seeds: pick them all up and keep sowing (R5).
+    // Last seed in a pit that already had seeds.
     if (pits[pos] > 1) {
+      if (state.ruleset === 'video') {
+        // R17: no relay — only landing in your own store lets you keep going.
+        steps.push({ kind: 'turnEnd', player, pit: pos, reason: 'occupiedPit' });
+        break;
+      }
+      // R5: pick them all up and keep sowing.
       hand = pits[pos];
       pits[pos] = 0;
       steps.push({ kind: 'relay', player, pit: pos, seeds: hand });
@@ -238,7 +251,7 @@ export function playMove(state: GameState, pit: PitIndex): MoveResult {
   return resolveNextTurn(state, pits, player, extraTurn, steps);
 }
 
-/** Decide who moves next, applying pass (R9, A6) and round end (R10). */
+/** Decide who moves next (R8) and whether the round is over, per the ruleset. */
 function resolveNextTurn(
   prev: GameState,
   pits: number[],
@@ -247,6 +260,20 @@ function resolveNextTurn(
   steps: Step[],
 ): MoveResult {
   const candidate = extraTurn ? mover : otherPlayer(mover);
+
+  if (prev.ruleset === 'video') {
+    // R17: as soon as either side is empty the round ends — even right after an extra
+    // turn — and the seeds still on the board go to the owner of that side.
+    const emptySides = ([0, 1] as const).filter((p) => seedsOnSide(pits, p) === 0);
+    if (emptySides.length > 0) {
+      for (const player of emptySides) steps.push({ kind: 'sideEmpty', player });
+      sweepRemainingSeeds(pits, steps);
+      return endRound(prev, pits, steps);
+    }
+    return { state: { ...prev, pits, current: candidate }, steps };
+  }
+
+  // R9 (pass, A6): a player with no seeds is skipped; R10: the round ends when both are empty.
   if (seedsOnSide(pits, candidate) > 0) {
     return { state: { ...prev, pits, current: candidate }, steps };
   }
@@ -258,7 +285,21 @@ function resolveNextTurn(
   return endRound(prev, pits, steps);
 }
 
-/** All small pits are empty, so every seed is in a store (R10). */
+/** R17: every seed left in a small pit goes into the store of that pit's owner. */
+function sweepRemainingSeeds(pits: number[], steps: Step[]): void {
+  for (const player of [0, 1] as const) {
+    const store = storeOf(player);
+    for (const pit of pitsOf(player)) {
+      const seeds = pits[pit];
+      if (seeds === 0) continue;
+      pits[pit] = 0;
+      pits[store] += seeds;
+      steps.push({ kind: 'sweep', player, pit, seeds });
+    }
+  }
+}
+
+/** All small pits are empty, so every seed is in a store. */
 function endRound(prev: GameState, pits: number[], steps: Step[]): MoveResult {
   const stores: [number, number] = [pits[P1_STORE], pits[P2_STORE]];
   const roundWinner: Player | null = stores[0] === stores[1] ? null : stores[0] > stores[1] ? 0 : 1;
