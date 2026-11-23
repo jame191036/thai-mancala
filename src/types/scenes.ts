@@ -1,4 +1,24 @@
 import type { GameEndReason, GameMode, Player, Ruleset } from '../logic/types';
+import type { AiLevel } from '../ai/ai';
+import { PLAYER_NAME } from '../display/palette';
+
+/** Who plays P2 (top row): another person on the same device, or the AI. P1 is always a person. */
+export type Opponent = 'human' | AiLevel;
+export const OPPONENTS: readonly Opponent[] = ['human', 'easy', 'medium', 'hard'];
+/** The AI always plays P2. */
+export const AI_PLAYER: Player = 1;
+
+export const OPPONENT_LABEL: Record<Opponent, string> = {
+  human: '2 คน',
+  easy: 'AI ง่าย',
+  medium: 'AI กลาง',
+  hard: 'AI ยาก',
+};
+
+/** Names shown for [P1, P2]. */
+export function playerNames(opponent: Opponent): readonly [string, string] {
+  return opponent === 'human' ? PLAYER_NAME : ['คุณ', OPPONENT_LABEL[opponent]];
+}
 
 /** Scene keys: use these instead of string literals so typos fail to compile. */
 export const SceneKeys = {
@@ -16,6 +36,8 @@ export interface GameSceneData {
   maxRounds?: number;
   /** `traditional` (default) or `video` (R17). */
   ruleset?: Ruleset;
+  /** P2 is a second person (default) or the AI at some level. */
+  opponent?: Opponent;
   /** Who moves first; random when omitted (R11). */
   firstPlayer?: Player;
 }
@@ -36,6 +58,7 @@ export const RULESET_SUMMARY: Record<Ruleset, string> = {
 export interface GameOverData {
   mode: GameMode;
   ruleset: Ruleset;
+  opponent: Opponent;
   maxRounds: number;
   /** Round in which the game ended. */
   round: number;

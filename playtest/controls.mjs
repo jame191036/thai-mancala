@@ -49,11 +49,11 @@ export default [
     expect: { expression: `${GS}.state.pits`, equals: [8, 8, 0, 8, 8, 8, 8, 10, 8, 0, 8, 8, 0, 8, 8, 0] },
   },
 
-  // Speed button cycles ×1 → ×2 → ×4 → ×1 (F key does the same).
+  // Speed button cycles ปกติ(1) → เร็ว(2) → เร็วมาก(4) → ช้ามาก(0.25) → ช้า(0.5) → ปกติ (F key does the same).
   { name: 'press F', action: 'press', key: 'f' },
-  { name: 'speed ×2', action: 'expect', expect: { expression: `${GS}.speed`, equals: 2 } },
+  { name: 'speed เร็ว (×2)', action: 'expect', expect: { expression: `${GS}.speed`, equals: 2 } },
   { name: 'click the speed button', action: 'click', x: 2 * 460, y: 2 * 14 },
-  { name: 'speed ×4', action: 'expect', expect: { expression: `${GS}.speed`, equals: 4 } },
+  { name: 'speed เร็วมาก (×4)', action: 'expect', expect: { expression: `${GS}.speed`, equals: 4 } },
 
   // Keyboard: P2 to move; → selects the leftmost legal pit on screen, Enter sows.
   { name: 'P2 to move', action: 'expect', expect: { expression: `${GS}.state.current`, equals: 1 } },
@@ -81,8 +81,11 @@ export default [
   // Regression: → and Enter arriving within ONE frame. Phaser 4.2.1 re-dispatches queued
   // key events in that case; before the fix → fired twice (wrong pit) and the second
   // Enter skipped the move it had just started. Dispatched synchronously = same frame.
-  { name: 'back to ×1 so a move lasts well over 150 ms', action: 'press', key: 'f' },
-  { name: 'speed ×1', action: 'expect', expect: { expression: `${GS}.speed`, equals: 1 } },
+  { name: 'F wraps round to ช้ามาก', action: 'press', key: 'f' },
+  { name: 'speed ช้ามาก (×0.25)', action: 'expect', expect: { expression: `${GS}.speed`, equals: 0.25 } },
+  { name: 'F → ช้า', action: 'press', key: 'f' },
+  { name: 'F → ปกติ, so a move lasts well over 150 ms', action: 'press', key: 'f' },
+  { name: 'speed ปกติ (×1)', action: 'expect', expect: { expression: `${GS}.speed`, equals: 1 } },
   {
     name: 'remember the expected pit and board',
     action: 'eval',

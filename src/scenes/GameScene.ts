@@ -3,15 +3,25 @@ import { BOARD_SIZE, P1_STORE, isStore, storeOf } from '../logic/board';
 import { createGame, isLegalMove, legalMoves, playMove, randomPlayer, startNextRound } from '../logic/rules';
 import type { GameState, PitIndex, Player, Step } from '../logic/types';
 import { LAYOUT, handPosition, slotPosition } from '../display/boardLayout';
-import { COLORS, CSS, FONT, PLAYER_COLOR, PLAYER_CSS, PLAYER_NAME } from '../display/palette';
-import { RULESET_NAME, SceneKeys, type GameOverData, type GameSceneData } from '../types/scenes';
+import { COLORS, CSS, FONT, PLAYER_COLOR, PLAYER_CSS } from '../display/palette';
+import {
+  AI_PLAYER,
+  RULESET_NAME,
+  SceneKeys,
+  playerNames,
+  type GameOverData,
+  type GameSceneData,
+  type Opponent,
+} from '../types/scenes';
+import { AiClient } from '../ai/AiClient';
+import type { AiLevel } from '../ai/ai';
 import { onKeyDown } from '../input/keys';
+import { SOW_SPEED_LABEL, loadSowSpeed, nextSowSpeed, saveSowSpeed, type SowSpeed } from '../settings';
 
 /** One seed drop at ×1 speed (GDD §3.7). */
 const BASE_DROP_MS = 120;
-const SPEEDS = [1, 2, 4] as const;
-type Speed = (typeof SPEEDS)[number];
-const SPEED_REGISTRY_KEY = 'sowSpeed';
+/** Minimum time the AI appears to think (GDD §6), so its moves are readable. */
+const AI_THINK_MS: Record<AiLevel, number> = { easy: 750, medium: 650, hard: 350 };
 
 interface SlotView {
   shape: Phaser.GameObjects.Arc | Phaser.GameObjects.Rectangle;
@@ -36,11 +46,18 @@ export class GameScene extends Phaser.Scene {
   lastMovePit: PitIndex | null = null;
   /** Who is sowing right now (null between moves and during refills). */
   sowingPlayer: Player | null = null;
-  speed: Speed = 1;
+  /** Sowing speed (settings: ช้ามาก 0.25 … เร็วมาก 4). */
+  speed: SowSpeed = 1;
   /** Finish every animation instantly (accessibility option and fast playtests). */
   reducedMotion = false;
   /** GDD: on touch, the first tap selects a pit and a second tap on it sows. */
   touchConfirm = true;
+  /** Who plays P2: a second person or the AI. */
+  opponent: Opponent = 'human';
+  /** True while waiting for the AI to pick a pit. */
+  aiThinking = false;
+  /** Moves the AI has made this game. */
+  aiMoves = 0;
 
   private slots: SlotView[] = [];
   /** What the screen currently shows (follows the steps during an animation). */
@@ -59,6 +76,10 @@ export class GameScene extends Phaser.Scene {
   private skipRequested = false;
   private moveStartTime = -1;
   private dropsThisMove = 0;
+  private names: readonly [string, string] = ['', ''];
+  private ai: AiClient | null = null;
+  /** Bumped on every new game/shutdown so a late AI answer is ignored. */
+  private aiToken = 0;
 
   constructor() {
     super(SceneKeys.Game);
@@ -75,8 +96,15 @@ export class GameScene extends Phaser.Scene {
     this.hoverPit = null;
     this.skipRequested = false;
     this.moveStartTime = -1;
-    this.speed = (this.registry.get(SPEED_REGISTRY_KEY) as Speed | undefined) ?? 1;
+    this.speed = loadSowSpeed(this.registry);
     this.reducedMotion = this.registry.get('reducedMotion') === true;
+    this.opponent = data.opponent ?? 'human';
+    this.names = playerNames(this.opponent);
+    this.aiThinking = false;
+    this.aiMoves = 0;
+    this.aiToken += 1;
+    this.ai?.destroy();
+    this.ai = this.opponent === 'human' ? null : new AiClient();
 
     this.state = createGame(data.mode ?? 'short', data.firstPlayer ?? randomPlayer(), {
       maxRounds: data.maxRounds,
@@ -88,11 +116,17 @@ export class GameScene extends Phaser.Scene {
     this.createHud();
     this.createHand();
     this.setupInput();
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.flushPending());
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.flushPending();
+      this.aiToken += 1;
+      this.ai?.destroy();
+      this.ai = null;
+    });
 
     this.renderBoard(this.state);
     this.refreshTurnUi();
-    this.showBanner(`${PLAYER_NAME[this.state.current]} เริ่มก่อน`, PLAYER_CSS[this.state.current]);
+    this.showBanner(`${this.names[this.state.current]} เริ่มก่อน`, PLAYER_CSS[this.state.current]);
+    this.maybePlayAi();
   }
 
   // ── Public API (also used by playtests) ────────────────────────────────────
@@ -106,6 +140,16 @@ export class GameScene extends Phaser.Scene {
     if (this.busy || !isLegalMove(this.state, pit)) return false;
     void this.runMove(pit);
     return true;
+  }
+
+  /** True when the AI runs in a Web Worker (false = main-thread fallback or no AI). */
+  get aiInWorker(): boolean {
+    return this.ai?.usesWorker ?? false;
+  }
+
+  /** Is it the AI's turn to pick a pit? (Human input is ignored then.) */
+  isAiTurn(): boolean {
+    return this.opponent !== 'human' && this.state.phase === 'playing' && this.state.current === AI_PLAYER;
   }
 
   /** Numbers currently on screen, slot by slot (dead pits read as 0). */
@@ -214,6 +258,10 @@ export class GameScene extends Phaser.Scene {
 
   private onPitPointer(pit: PitIndex, pointer: Phaser.Input.Pointer): void {
     if (this.busy || this.state.phase !== 'playing') return;
+    if (this.isAiTurn()) {
+      this.messageLabel.setText(`รอ ${this.names[AI_PLAYER]} เดิน`);
+      return;
+    }
     if (!isLegalMove(this.state, pit)) {
       this.nudge(pit);
       return;
@@ -228,7 +276,7 @@ export class GameScene extends Phaser.Scene {
 
   /** ← / → walk through the current player's legal pits in screen order. */
   private moveSelection(dir: 1 | -1): void {
-    if (this.busy) return;
+    if (this.busy || this.isAiTurn()) return;
     const legal = this.legalPits().sort((a, b) => slotPosition(a).x - slotPosition(b).x);
     if (legal.length === 0) return;
     const at = this.selectedPit === null ? -1 : legal.indexOf(this.selectedPit);
@@ -241,6 +289,7 @@ export class GameScene extends Phaser.Scene {
       this.requestSkip();
       return;
     }
+    if (this.isAiTurn()) return;
     if (this.selectedPit !== null && isLegalMove(this.state, this.selectedPit)) this.choosePit(this.selectedPit);
     else this.moveSelection(1);
   }
@@ -258,9 +307,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private cycleSpeed(): void {
-    this.speed = SPEEDS[(SPEEDS.indexOf(this.speed) + 1) % SPEEDS.length];
-    this.registry.set(SPEED_REGISTRY_KEY, this.speed);
-    this.speedButton.setText(`×${this.speed}`);
+    this.speed = nextSowSpeed(this.speed);
+    saveSowSpeed(this.registry, this.speed);
+    this.speedButton.setText(this.speedText());
   }
 
   // ── Playing a move ─────────────────────────────────────────────────────────
@@ -298,6 +347,30 @@ export class GameScene extends Phaser.Scene {
     }
     this.busy = false;
     this.refreshTurnUi();
+    this.maybePlayAi();
+  }
+
+  /** If it is the AI's turn, ask it (in the worker) and play its pit after a short pause. */
+  private maybePlayAi(): void {
+    if (!this.ai || this.aiThinking || this.busy || !this.isAiTurn() || this.opponent === 'human') return;
+    const level = this.opponent;
+    const token = this.aiToken;
+    const asked = this.state;
+    const started = this.time.now;
+    this.aiThinking = true;
+    this.refreshTurnUi();
+    void this.ai.choose(asked, level).then((pit) => {
+      // Ignore answers for a game or position that no longer exists.
+      if (token !== this.aiToken || this.state !== asked || !this.sys.isActive()) return;
+      const minThink = this.reducedMotion ? 0 : AI_THINK_MS[level] / Math.max(this.speed, 1);
+      const delay = Math.max(0, minThink - (this.time.now - started));
+      this.time.delayedCall(delay, () => {
+        if (token !== this.aiToken || this.state !== asked) return;
+        this.aiThinking = false;
+        if (this.choosePit(pit)) this.aiMoves += 1;
+        else this.refreshTurnUi();
+      });
+    });
   }
 
   private async animate(steps: readonly Step[], from: GameState): Promise<void> {
@@ -350,12 +423,12 @@ export class GameScene extends Phaser.Scene {
         // No "move again" banner when the round ends right after (nothing left to play).
         // `this.state` already holds the result of the move being animated.
         if (this.state.phase !== 'playing') break;
-        this.showBanner(`${PLAYER_NAME[step.player]} ได้เดินอีกตา!`, PLAYER_CSS[step.player]);
+        this.showBanner(`${this.names[step.player]} ได้เดินอีกตา!`, PLAYER_CSS[step.player]);
         await this.wait(this.pauseMs(600));
         break;
 
       case 'sideEmpty':
-        this.showBanner(`หลุมฝั่ง${PLAYER_NAME[step.player]}หมด: จบรอบ`, PLAYER_CSS[step.player]);
+        this.showBanner(`หลุมฝั่ง${this.names[step.player]}หมด: จบรอบ`, PLAYER_CSS[step.player]);
         await this.wait(this.pauseMs(700));
         break;
 
@@ -373,7 +446,7 @@ export class GameScene extends Phaser.Scene {
         break;
 
       case 'pass':
-        this.showBanner(`${PLAYER_NAME[step.player]} ไม่มีเม็ด ข้ามตา`, PLAYER_CSS[step.player]);
+        this.showBanner(`${this.names[step.player]} ไม่มีเม็ด ข้ามตา`, PLAYER_CSS[step.player]);
         await this.wait(this.pauseMs(800));
         break;
 
@@ -401,7 +474,7 @@ export class GameScene extends Phaser.Scene {
 
       case 'roundStart':
         this.showBanner(
-          `รอบที่ ${step.round}/${this.state.maxRounds}: ${PLAYER_NAME[step.starter]} เริ่ม`,
+          `รอบที่ ${step.round}/${this.state.maxRounds}: ${this.names[step.starter]} เริ่ม`,
           PLAYER_CSS[step.starter],
         );
         await this.wait(this.pauseMs(700));
@@ -414,6 +487,7 @@ export class GameScene extends Phaser.Scene {
     const data: GameOverData = {
       mode: s.mode,
       ruleset: s.ruleset,
+      opponent: this.opponent,
       maxRounds: s.maxRounds,
       round: s.round,
       winner: s.winner,
@@ -456,8 +530,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private refreshPitStyles(): void {
-    const playing = this.state.phase === 'playing' && !this.busy;
-    const legal = new Set(playing ? this.legalPits() : []);
+    const humanToPlay = this.state.phase === 'playing' && !this.busy && !this.isAiTurn();
+    const legal = new Set(humanToPlay ? this.legalPits() : []);
     const cur = this.state.current;
     this.slots.forEach((slot, i) => {
       if (isStore(i) || !(slot.shape instanceof Phaser.GameObjects.Arc)) return;
@@ -482,16 +556,18 @@ export class GameScene extends Phaser.Scene {
     const s = this.state;
     // While sowing, the engine state already points at the NEXT player; show the mover.
     const active: Player | null = this.busy ? this.sowingPlayer : s.phase === 'playing' ? s.current : null;
-    const label = (p: Player) => `${active === p ? '▶ ' : ''}${PLAYER_NAME[p]}`;
+    const label = (p: Player) => `${active === p ? '▶ ' : ''}${this.names[p]}`;
     this.p1Label.setText(`${label(0)}  (แถวล่าง)`).setColor(active === 0 ? PLAYER_CSS[0] : CSS.dim);
     this.p2Label.setText(`${label(1)}  (แถวบน)`).setColor(active === 1 ? PLAYER_CSS[1] : CSS.dim);
     const mode = s.mode === 'full' ? `เกมเต็ม · รอบ ${s.round}/${s.maxRounds}` : 'เกมสั้น';
     this.roundLabel.setText(`${mode} · ${RULESET_NAME[s.ruleset]}`);
-    this.speedButton.setText(`×${this.speed}`);
+    this.speedButton.setText(this.speedText());
     this.messageLabel.setText(
       this.busy
-        ? `${active === null ? '' : `${PLAYER_NAME[active]} กำลังหว่าน · `}แตะ/คลิกที่ใดก็ได้เพื่อข้าม`
-        : `ตาของ${PLAYER_NAME[s.current]}: เลือกหลุมฝั่งตัวเองที่มีเม็ด`,
+        ? `${active === null ? '' : `${this.names[active]} กำลังหว่าน · `}แตะ/คลิกที่ใดก็ได้เพื่อข้าม`
+        : this.isAiTurn()
+          ? `${this.names[AI_PLAYER]} กำลังคิด...`
+          : `ตาของ${this.names[s.current]}: เลือกหลุมฝั่งตัวเองที่มีเม็ด`,
     );
     this.refreshPitStyles();
   }
@@ -515,15 +591,23 @@ export class GameScene extends Phaser.Scene {
 
   // ── Animation helpers ──────────────────────────────────────────────────────
 
-  /** Long relay chains speed themselves up: ×2 after 30 drops, ×4 after 60 (GDD §3.7). */
+  /**
+   * One seed drop. Long relay chains speed themselves up (×2 after 30 drops, ×4 after 60,
+   * GDD §3.7) — except at the slow settings, where the player chose to watch every seed.
+   */
   private dropMs(): number {
     if (this.reducedMotion) return 0;
-    const accel = this.dropsThisMove > 60 ? 4 : this.dropsThisMove > 30 ? 2 : 1;
+    const accel = this.speed < 1 ? 1 : this.dropsThisMove > 60 ? 4 : this.dropsThisMove > 30 ? 2 : 1;
     return BASE_DROP_MS / (this.speed * accel);
   }
 
+  /** Banners and pauses: shorter when fast, but never longer than normal when slow. */
   private pauseMs(ms: number): number {
-    return this.reducedMotion ? 0 : ms / this.speed;
+    return this.reducedMotion ? 0 : ms / Math.max(this.speed, 1);
+  }
+
+  private speedText(): string {
+    return `ความเร็ว: ${SOW_SPEED_LABEL[this.speed]}`;
   }
 
   private moveHandTo(index: PitIndex, ms: number): Promise<void> {

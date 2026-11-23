@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { TOTAL_SEEDS, storeOf } from '../src/logic/board';
-import { createGame, legalMoves, playMove, startNextRound } from '../src/logic/rules';
+import { applyMove, createGame, legalMoves, playMove, startNextRound } from '../src/logic/rules';
 import type { GameMode, GameState, MoveResult, Ruleset } from '../src/logic/types';
 import { replaySteps, sum } from './helpers';
 
@@ -112,6 +112,10 @@ function runRandomGames(
       }
       const pit = moves[Math.floor(random() * moves.length)];
       const result = playMove(state, pit);
+      // The AI's fast path must reach exactly the same state.
+      if (!t.failure && JSON.stringify(applyMove(state, pit)) !== JSON.stringify(result.state)) {
+        t.failure = `game ${g}: applyMove and playMove disagree on pit ${pit}`;
+      }
       const problem = checkTransition(state, result);
       if (problem) t.failure = `game ${g}, round ${rounds}, P${state.current + 1} pit ${pit}: ${problem}`;
       state = result.state;

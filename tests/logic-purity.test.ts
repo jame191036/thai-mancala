@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 // GDD §10 / CLAUDE.md: game rules are pure TypeScript so they can be unit-tested, run in a
 // Web Worker for the AI, and reused on a server later. Phaser must never leak in.
-const sources = import.meta.glob('../src/logic/*.ts', { query: '?raw', import: 'default', eager: true }) as Record<
+const sources = import.meta.glob(['../src/logic/*.ts', '../src/ai/*.ts'], { query: '?raw', import: 'default', eager: true }) as Record<
   string,
   string
 >;
 
-describe('src/logic is pure TypeScript', () => {
+describe('src/logic and src/ai are pure TypeScript (no Phaser)', () => {
   it('finds the logic files', () => {
     expect(Object.keys(sources).length).toBeGreaterThanOrEqual(3);
   });

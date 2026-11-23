@@ -1,6 +1,13 @@
 import Phaser from 'phaser';
-import { CSS, FONT, PLAYER_CSS, PLAYER_NAME } from '../display/palette';
-import { RULESET_NAME, RULESET_SUMMARY, SceneKeys, type GameOverData, type GameSceneData } from '../types/scenes';
+import { CSS, FONT, PLAYER_CSS } from '../display/palette';
+import {
+  RULESET_NAME,
+  RULESET_SUMMARY,
+  SceneKeys,
+  playerNames,
+  type GameOverData,
+  type GameSceneData,
+} from '../types/scenes';
 
 /** Result screen: who won, the store totals, and why the game ended. */
 export class GameOverScene extends Phaser.Scene {
@@ -13,20 +20,26 @@ export class GameOverScene extends Phaser.Scene {
 
   create(data: GameOverData): void {
     this.result = data;
+    const names = playerNames(data.opponent);
     const { width } = this.scale;
     const text = (y: number, s: string, size: number, color: string, bold = true) =>
       this.add
         .text(width / 2, y, s, { fontFamily: FONT, fontSize: `${size}px`, color, fontStyle: bold ? 'bold' : 'normal' })
         .setOrigin(0.5);
 
-    const title = data.winner === null ? 'เสมอ!' : `${PLAYER_NAME[data.winner]} ชนะ!`;
+    const title = data.winner === null ? 'เสมอ!' : `${names[data.winner]} ชนะ!`;
     text(60, title, 32, data.winner === null ? CSS.gold : PLAYER_CSS[data.winner]);
-    text(104, `${PLAYER_NAME[0]}  ${data.stores[0]} : ${data.stores[1]}  ${PLAYER_NAME[1]}`, 16, CSS.cream);
-    text(132, reasonText(data), 11, CSS.dim, false);
+    text(104, `${names[0]}  ${data.stores[0]} : ${data.stores[1]}  ${names[1]}`, 16, CSS.cream);
+    text(132, reasonText(data, names), 11, CSS.dim, false);
     text(150, `${RULESET_NAME[data.ruleset]}: ${RULESET_SUMMARY[data.ruleset]}`, 10, CSS.dim, false);
 
     const rematch = () => {
-      const again: GameSceneData = { mode: data.mode, maxRounds: data.maxRounds, ruleset: data.ruleset };
+      const again: GameSceneData = {
+        mode: data.mode,
+        maxRounds: data.maxRounds,
+        ruleset: data.ruleset,
+        opponent: data.opponent,
+      };
       this.scene.start(SceneKeys.Game, again);
     };
     const toMenu = () => this.scene.start(SceneKeys.MainMenu);
@@ -56,7 +69,7 @@ export class GameOverScene extends Phaser.Scene {
   }
 }
 
-function reasonText(d: GameOverData): string {
+function reasonText(d: GameOverData, names: readonly [string, string]): string {
   switch (d.reason) {
     case 'singleRound':
       return 'เกมสั้น 1 รอบ: นับเม็ดในเรือน';
@@ -66,7 +79,7 @@ function reasonText(d: GameOverData): string {
       const loser = d.winner === null ? null : d.winner === 0 ? 1 : 0;
       return loser === null
         ? `จบรอบที่ ${d.round}: เหลือเม็ดไม่พอเติมหลุม`
-        : `${PLAYER_NAME[loser]} เหลือเม็ดไม่พอเติมหลุม (จบรอบที่ ${d.round})`;
+        : `${names[loser]} เหลือเม็ดไม่พอเติมหลุม (จบรอบที่ ${d.round})`;
     }
   }
 }

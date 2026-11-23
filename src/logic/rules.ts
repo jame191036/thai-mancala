@@ -144,7 +144,10 @@ export function randomPlayer(rng: () => number = Math.random): Player {
 
 /** Seeds on `player`'s side (small pits only; stores excluded). */
 export function seedsOnSide(pits: readonly number[], player: Player): number {
-  return pitsOf(player).reduce((sum, i) => sum + pits[i], 0);
+  const first = player === 0 ? 0 : 8;
+  let sum = 0;
+  for (let i = first; i < first + 7; i++) sum += pits[i];
+  return sum;
 }
 
 export function totalSeeds(state: GameState): number {
@@ -174,6 +177,21 @@ export function isLegalMove(state: GameState, pit: PitIndex): boolean {
  * Throws `IllegalMoveError` if the move is not allowed.
  */
 export function playMove(state: GameState, pit: PitIndex): MoveResult {
+  const steps: Step[] = [];
+  return { state: runTurn(state, pit, steps), steps };
+}
+
+/**
+ * Exactly the same rules as `playMove`, but records no steps — several times faster.
+ * For the AI search, which tries many thousands of moves. Same validation and errors.
+ */
+export function applyMove(state: GameState, pit: PitIndex): GameState {
+  return runTurn(state, pit, null);
+}
+
+/** One turn. `rec` collects steps, or is null to skip building them (`rec?.push(...)`
+ *  does not even evaluate its argument when `rec` is null). */
+function runTurn(state: GameState, pit: PitIndex, rec: Step[] | null): GameState {
   if (state.phase !== 'playing') throw new IllegalMoveError(`cannot move while phase is "${state.phase}"`);
   if (!isLegalMove(state, pit)) {
     throw new IllegalMoveError(`pit ${pit} is not a legal move for P${state.current + 1}`);
@@ -182,11 +200,10 @@ export function playMove(state: GameState, pit: PitIndex): MoveResult {
   const player = state.current;
   const store = storeOf(player);
   const pits = [...state.pits];
-  const steps: Step[] = [];
 
   let hand = pits[pit];
   pits[pit] = 0;
-  steps.push({ kind: 'pickup', player, pit, seeds: hand });
+  rec?.push({ kind: 'pickup', player, pit, seeds: hand });
 
   let pos = pit;
   let drops = 0;
@@ -199,7 +216,7 @@ export function playMove(state: GameState, pit: PitIndex): MoveResult {
       pos = nextPosition(pos, player, state.dead);
       pits[pos] += 1;
       hand -= 1;
-      steps.push({ kind: 'drop', player, pit: pos, pitSeeds: pits[pos], handSeeds: hand });
+      rec?.push({ kind: 'drop', player, pit: pos, pitSeeds: pits[pos], handSeeds: hand });
       if (++drops > MAX_DROPS_PER_TURN) {
         throw new Error(`sowing exceeded ${MAX_DROPS_PER_TURN} drops: rules engine bug`);
       }
@@ -208,7 +225,7 @@ export function playMove(state: GameState, pit: PitIndex): MoveResult {
     // Last seed in own store: move again (R8).
     if (pos === store) {
       extraTurn = true;
-      steps.push({ kind: 'extraTurn', player });
+      rec?.push({ kind: 'extraTurn', player });
       break;
     }
 
@@ -216,13 +233,13 @@ export function playMove(state: GameState, pit: PitIndex): MoveResult {
     if (pits[pos] > 1) {
       if (state.ruleset === 'video') {
         // R17: no relay — only landing in your own store lets you keep going.
-        steps.push({ kind: 'turnEnd', player, pit: pos, reason: 'occupiedPit' });
+        rec?.push({ kind: 'turnEnd', player, pit: pos, reason: 'occupiedPit' });
         break;
       }
       // R5: pick them all up and keep sowing.
       hand = pits[pos];
       pits[pos] = 0;
-      steps.push({ kind: 'relay', player, pit: pos, seeds: hand });
+      rec?.push({ kind: 'relay', player, pit: pos, seeds: hand });
       continue;
     }
 
@@ -235,20 +252,20 @@ export function playMove(state: GameState, pit: PitIndex): MoveResult {
         pits[opp] = 0;
         pits[pos] = 0;
         pits[store] += captured + 1;
-        steps.push({ kind: 'capture', player, pit: pos, opposite: opp, captured, toStore: captured + 1 });
-        steps.push({ kind: 'turnEnd', player, pit: pos, reason: 'captured' });
+        rec?.push({ kind: 'capture', player, pit: pos, opposite: opp, captured, toStore: captured + 1 });
+        rec?.push({ kind: 'turnEnd', player, pit: pos, reason: 'captured' });
       } else {
         // Opposite pit empty or dead: nothing to capture, the seed stays (R6, A2).
-        steps.push({ kind: 'turnEnd', player, pit: pos, reason: 'ownEmptyPit' });
+        rec?.push({ kind: 'turnEnd', player, pit: pos, reason: 'ownEmptyPit' });
       }
     } else {
       // Opponent's empty pit: the seed stays and the turn ends (R7).
-      steps.push({ kind: 'turnEnd', player, pit: pos, reason: 'opponentEmptyPit' });
+      rec?.push({ kind: 'turnEnd', player, pit: pos, reason: 'opponentEmptyPit' });
     }
     break;
   }
 
-  return resolveNextTurn(state, pits, player, extraTurn, steps);
+  return resolveNextTurn(state, pits, player, extraTurn, rec);
 }
 
 /** Decide who moves next (R8) and whether the round is over, per the ruleset. */
@@ -257,36 +274,38 @@ function resolveNextTurn(
   pits: number[],
   mover: Player,
   extraTurn: boolean,
-  steps: Step[],
-): MoveResult {
+  rec: Step[] | null,
+): GameState {
   const candidate = extraTurn ? mover : otherPlayer(mover);
 
   if (prev.ruleset === 'video') {
     // R17: as soon as either side is empty the round ends — even right after an extra
     // turn — and the seeds still on the board go to the owner of that side.
-    const emptySides = ([0, 1] as const).filter((p) => seedsOnSide(pits, p) === 0);
-    if (emptySides.length > 0) {
-      for (const player of emptySides) steps.push({ kind: 'sideEmpty', player });
-      sweepRemainingSeeds(pits, steps);
-      return endRound(prev, pits, steps);
+    const p1Empty = seedsOnSide(pits, 0) === 0;
+    const p2Empty = seedsOnSide(pits, 1) === 0;
+    if (p1Empty || p2Empty) {
+      if (p1Empty) rec?.push({ kind: 'sideEmpty', player: 0 });
+      if (p2Empty) rec?.push({ kind: 'sideEmpty', player: 1 });
+      sweepRemainingSeeds(pits, rec);
+      return endRound(prev, pits, rec);
     }
-    return { state: { ...prev, pits, current: candidate }, steps };
+    return { ...prev, pits, current: candidate };
   }
 
   // R9 (pass, A6): a player with no seeds is skipped; R10: the round ends when both are empty.
   if (seedsOnSide(pits, candidate) > 0) {
-    return { state: { ...prev, pits, current: candidate }, steps };
+    return { ...prev, pits, current: candidate };
   }
   const other = otherPlayer(candidate);
   if (seedsOnSide(pits, other) > 0) {
-    steps.push({ kind: 'pass', player: candidate });
-    return { state: { ...prev, pits, current: other }, steps };
+    rec?.push({ kind: 'pass', player: candidate });
+    return { ...prev, pits, current: other };
   }
-  return endRound(prev, pits, steps);
+  return endRound(prev, pits, rec);
 }
 
 /** R17: every seed left in a small pit goes into the store of that pit's owner. */
-function sweepRemainingSeeds(pits: number[], steps: Step[]): void {
+function sweepRemainingSeeds(pits: number[], rec: Step[] | null): void {
   for (const player of [0, 1] as const) {
     const store = storeOf(player);
     for (const pit of pitsOf(player)) {
@@ -294,27 +313,24 @@ function sweepRemainingSeeds(pits: number[], steps: Step[]): void {
       if (seeds === 0) continue;
       pits[pit] = 0;
       pits[store] += seeds;
-      steps.push({ kind: 'sweep', player, pit, seeds });
+      rec?.push({ kind: 'sweep', player, pit, seeds });
     }
   }
 }
 
 /** All small pits are empty, so every seed is in a store. */
-function endRound(prev: GameState, pits: number[], steps: Step[]): MoveResult {
+function endRound(prev: GameState, pits: number[], rec: Step[] | null): GameState {
   const stores: [number, number] = [pits[P1_STORE], pits[P2_STORE]];
   const roundWinner: Player | null = stores[0] === stores[1] ? null : stores[0] > stores[1] ? 0 : 1;
   const result: RoundResult = { round: prev.round, stores, winner: roundWinner };
-  steps.push({ kind: 'roundEnd', ...result });
+  rec?.push({ kind: 'roundEnd', ...result });
 
   const over = gameOverAfterRound(prev, stores, roundWinner);
   if (!over) {
-    return { state: { ...prev, pits, phase: 'roundOver', lastRound: result, winner: null }, steps };
+    return { ...prev, pits, phase: 'roundOver', lastRound: result, winner: null };
   }
-  steps.push({ kind: 'gameOver', winner: over.winner, reason: over.reason });
-  return {
-    state: { ...prev, pits, phase: 'gameOver', lastRound: result, winner: over.winner, endReason: over.reason },
-    steps,
-  };
+  rec?.push({ kind: 'gameOver', winner: over.winner, reason: over.reason });
+  return { ...prev, pits, phase: 'gameOver', lastRound: result, winner: over.winner, endReason: over.reason };
 }
 
 /** Does the game end after this round, and who won? `null` = play another round. */
