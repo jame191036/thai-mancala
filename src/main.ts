@@ -5,6 +5,7 @@ import { PreloaderScene } from './scenes/PreloaderScene';
 import { MainMenuScene } from './scenes/MainMenuScene';
 import { GameScene } from './scenes/GameScene';
 import { GameOverScene } from './scenes/GameOverScene';
+import { PauseScene } from './scenes/PauseScene';
 import { BASE_HEIGHT, BASE_WIDTH, computeIntegerScale } from './display/integerScale';
 
 const CONTAINER_ID = 'game-container';
@@ -25,6 +26,8 @@ const config: Phaser.Types.Core.GameConfig = {
   backgroundColor: '#1E1A2B',
   pixelArt: true,
   roundPixels: true,
+  // Gamepad support (GDD §3.8.1): see src/input/gamepad.ts.
+  input: { gamepad: true },
   scale: {
     // NONE + zoom instead of FIT: FIT scales by fractions and makes pixels uneven.
     // Centering is done by the flex container in style.css.
@@ -32,7 +35,7 @@ const config: Phaser.Types.Core.GameConfig = {
     autoCenter: Phaser.Scale.NO_CENTER,
     zoom: currentZoom(),
   },
-  scene: [BootScene, PreloaderScene, MainMenuScene, GameScene, GameOverScene],
+  scene: [BootScene, PreloaderScene, MainMenuScene, GameScene, GameOverScene, PauseScene],
 };
 
 const game = new Phaser.Game(config);

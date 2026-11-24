@@ -1,5 +1,5 @@
 // Sowing speed setting: picked on the menu, used in the game, and the slow settings really
-// slow the seeds down. Menu row "ความเร็วหว่าน" at y 222, x 148/202/256/310/364
+// slow the seeds down. Menu row "ความเร็วหว่าน" at y 220, x 148/202/256/310/364
 // (ช้ามาก … เร็วมาก, see MENU_LAYOUT); clicks are ×2.
 //
 // P1 pit 2 holds 7 seeds: the 5th seed lands in P1's store (slot 7). At ปกติ (120 ms a
@@ -14,7 +14,7 @@ export default [
     timeout: 10000,
   },
   { name: 'default speed is ปกติ', action: 'expect', expect: { expression: `scene('MainMenuScene').speed`, equals: 1 } },
-  { name: 'click "ช้ามาก"', action: 'click', x: 2 * 148, y: 2 * 222 },
+  { name: 'click "ช้ามาก"', action: 'click', x: 2 * 148, y: 2 * 220 },
   { name: 'menu speed is ช้ามาก', action: 'expect', expect: { expression: `scene('MainMenuScene').speed`, equals: 0.25 } },
   { name: 'menu-speed', action: 'screenshot' },
   { name: 'Space starts a game', action: 'press', key: 'Space' },

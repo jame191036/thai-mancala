@@ -45,4 +45,20 @@ export default [
     expect: { expression: `scene('GameOverScene').result.stores[0] + scene('GameOverScene').result.stores[1]`, equals: 98 },
   },
   { name: 'full-game-over', action: 'screenshot' },
+
+  // Round count (R16): menu row "เกมเต็มกี่รอบ" at y 194, x 148/202/256 (3/5/7 รอบ);
+  // the full-game start button of row "แบบดั้งเดิม" is at (312, 110). Clicks are ×2.
+  { name: 'Esc = back to the menu', action: 'press', key: 'Escape' },
+  { name: 'menu again', action: 'waitFor', expression: `game.scene.isActive('MainMenuScene')`, timeout: 5000 },
+  { name: 'default is 3 rounds', action: 'expect', expect: { expression: `scene('MainMenuScene').rounds`, equals: 3 } },
+  { name: 'click "7 รอบ"', action: 'click', x: 2 * 256, y: 2 * 194 },
+  { name: 'menu now 7 rounds', action: 'expect', expect: { expression: `scene('MainMenuScene').rounds`, equals: 7 } },
+  { name: 'menu-7-rounds', action: 'screenshot' },
+  { name: 'click "แบบดั้งเดิม · เกมเต็ม · 7 รอบ"', action: 'click', x: 2 * 312, y: 2 * 110 },
+  {
+    name: 'a 7-round full game starts',
+    action: 'waitFor',
+    expression: `game.scene.isActive('GameScene') && ${GS}.state.mode === 'full' && ${GS}.state.maxRounds === 7`,
+    timeout: 5000,
+  },
 ];

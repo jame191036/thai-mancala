@@ -1,6 +1,6 @@
 // Single player vs the AI (GDD §6): pick "AI ยาก" on the menu, the AI (P2, top row) moves
 // by itself from a Web Worker, the human cannot play on its turn, and a full game finishes.
-// Menu: opponent buttons at y 76, x 150/220/290/360 (see MENU_LAYOUT); clicks are ×2.
+// Menu: opponent buttons at y 62, x 150/220/290/360 (see MENU_LAYOUT); clicks are ×2.
 const GS = `scene('GameScene')`;
 
 export default [
@@ -11,8 +11,10 @@ export default [
     timeout: 10000,
   },
   { name: 'default opponent is a second person', action: 'expect', expect: { expression: `scene('MainMenuScene').opponent`, equals: 'human' } },
-  { name: 'click "AI ยาก"', action: 'click', x: 2 * 360, y: 2 * 76 },
+  { name: 'click "AI ยาก"', action: 'click', x: 2 * 360, y: 2 * 62 },
   { name: 'hard AI selected', action: 'expect', expect: { expression: `scene('MainMenuScene').opponent`, equals: 'hard' } },
+  { name: '↑ moves the focus up to the opponent row', action: 'press', key: 'ArrowUp' },
+  { name: 'focus on the opponent row', action: 'expect', expect: { expression: "scene('MainMenuScene').focusRow", equals: 'opponent' } },
   { name: '← moves the selection to "AI กลาง"', action: 'press', key: 'ArrowLeft' },
   { name: 'medium AI selected', action: 'expect', expect: { expression: `scene('MainMenuScene').opponent`, equals: 'medium' } },
   { name: '→ back to "AI ยาก"', action: 'press', key: 'ArrowRight' },

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BOARD_SIZE, P1_STORE, isStore, storeOf } from '../logic/board';
+import { BOARD_SIZE, P1_STORE, isStore, otherPlayer, storeOf } from '../logic/board';
 import { createGame, isLegalMove, legalMoves, playMove, randomPlayer, startNextRound } from '../logic/rules';
 import type { GameState, PitIndex, Player, Step } from '../logic/types';
 import { LAYOUT, handPosition, slotPosition } from '../display/boardLayout';
@@ -12,11 +12,14 @@ import {
   type GameOverData,
   type GameSceneData,
   type Opponent,
+  type PauseSceneData,
 } from '../types/scenes';
 import { AiClient } from '../ai/AiClient';
 import type { AiLevel } from '../ai/ai';
 import { onKeyDown } from '../input/keys';
+import { connectedPadCount, onPadAction, onPadDisconnected, type PadAction } from '../input/gamepad';
 import { SOW_SPEED_LABEL, loadSowSpeed, nextSowSpeed, saveSowSpeed, type SowSpeed } from '../settings';
+import { clearSavedGame, saveGame } from '../save';
 
 /** One seed drop at ×1 speed (GDD §3.7). */
 const BASE_DROP_MS = 120;
@@ -72,6 +75,9 @@ export class GameScene extends Phaser.Scene {
   private roundLabel!: Phaser.GameObjects.Text;
   private messageLabel!: Phaser.GameObjects.Text;
   private speedButton!: Phaser.GameObjects.Text;
+  private pauseButton!: Phaser.GameObjects.Text;
+  /** Set once the game is over, so the pause menu can no longer open. */
+  private finished = false;
   private pending = new Set<() => void>();
   private skipRequested = false;
   private moveStartTime = -1;
@@ -98,7 +104,8 @@ export class GameScene extends Phaser.Scene {
     this.moveStartTime = -1;
     this.speed = loadSowSpeed(this.registry);
     this.reducedMotion = this.registry.get('reducedMotion') === true;
-    this.opponent = data.opponent ?? 'human';
+    this.finished = false;
+    this.opponent = data.resume?.opponent ?? data.opponent ?? 'human';
     this.names = playerNames(this.opponent);
     this.aiThinking = false;
     this.aiMoves = 0;
@@ -106,10 +113,14 @@ export class GameScene extends Phaser.Scene {
     this.ai?.destroy();
     this.ai = this.opponent === 'human' ? null : new AiClient();
 
-    this.state = createGame(data.mode ?? 'short', data.firstPlayer ?? randomPlayer(), {
-      maxRounds: data.maxRounds,
-      ruleset: data.ruleset,
-    });
+    // A saved game continues exactly where it was; otherwise a new game replaces any save.
+    this.state =
+      data.resume?.state ??
+      createGame(data.mode ?? 'short', data.firstPlayer ?? randomPlayer(), {
+        maxRounds: data.maxRounds,
+        ruleset: data.ruleset,
+      });
+    this.saveProgress(this.state);
 
     this.drawBoard();
     this.createSlots();
@@ -125,7 +136,10 @@ export class GameScene extends Phaser.Scene {
 
     this.renderBoard(this.state);
     this.refreshTurnUi();
-    this.showBanner(`${this.names[this.state.current]} เริ่มก่อน`, PLAYER_CSS[this.state.current]);
+    this.showBanner(
+      data.resume ? 'เล่นต่อจากที่บันทึกไว้' : `${this.names[this.state.current]} เริ่มก่อน`,
+      PLAYER_CSS[this.state.current],
+    );
     this.maybePlayAi();
   }
 
@@ -163,6 +177,61 @@ export class GameScene extends Phaser.Scene {
     this.skipRequested = true;
     this.tweens.killAll();
     this.flushPending();
+  }
+
+  // ── Pause menu & saving (called by PauseScene) ─────────────────────────────
+
+  /** Open the pause menu: this scene (tweens, timers, the AI's pending move) freezes. */
+  /** `padLost`: opened because a gamepad was unplugged (GDD §3.8.1, AC-G5). */
+  openPause(padLost = false): void {
+    if (this.finished || !this.scene.isActive()) return;
+    this.scene.pause();
+    const data: PauseSceneData = { padLost };
+    this.scene.launch(SceneKeys.Pause, data);
+  }
+
+  resumeFromPause(): void {
+    this.scene.stop(SceneKeys.Pause);
+    this.scene.resume();
+  }
+
+  /** Same settings, fresh board. */
+  restartGame(): void {
+    const s = this.state;
+    this.scene.stop(SceneKeys.Pause);
+    this.scene.start(SceneKeys.Game, { mode: s.mode, maxRounds: s.maxRounds, ruleset: s.ruleset, opponent: this.opponent });
+  }
+
+  /** Give up: against the AI it is you (P1); between two people, whoever's turn it is. */
+  resign(): void {
+    const s = this.state;
+    const loser: Player = this.opponent === 'human' ? s.current : 0;
+    const data: GameOverData = {
+      mode: s.mode,
+      ruleset: s.ruleset,
+      opponent: this.opponent,
+      maxRounds: s.maxRounds,
+      round: s.round,
+      winner: otherPlayer(loser),
+      stores: [s.pits[7], s.pits[15]],
+      reason: 'resigned',
+    };
+    this.finished = true;
+    clearSavedGame();
+    this.scene.stop(SceneKeys.Pause);
+    this.scene.start(SceneKeys.GameOver, data);
+  }
+
+  /** Back to the menu; the game stays saved, so the menu offers "เล่นต่อ". */
+  quitToMenu(): void {
+    this.scene.stop(SceneKeys.Pause);
+    this.scene.start(SceneKeys.MainMenu);
+  }
+
+  /** Keep the game in progress in localStorage; a finished game leaves no save. */
+  private saveProgress(state: GameState): void {
+    if (state.phase === 'playing') saveGame({ state, opponent: this.opponent });
+    else clearSavedGame();
   }
 
   // ── Building the screen ────────────────────────────────────────────────────
@@ -222,6 +291,11 @@ export class GameScene extends Phaser.Scene {
     this.banner = this.add.text(240, 45, '', this.textStyle(14, CSS.gold, true)).setOrigin(0.5).setAlpha(0);
     this.p1Label = this.add.text(12, 236, '', this.textStyle(12, CSS.dim, true)).setOrigin(0, 0.5);
     this.messageLabel = this.add.text(240, 256, '', this.textStyle(10, CSS.cream)).setOrigin(0.5);
+    this.pauseButton = this.add
+      .text(468, 236, '≡ พักเกม', this.textStyle(12, CSS.gold, true))
+      .setOrigin(1, 0.5)
+      .setInteractive({ useHandCursor: true });
+    this.pauseButton.on('pointerdown', () => this.openPause());
   }
 
   private createHand(): void {
@@ -236,7 +310,7 @@ export class GameScene extends Phaser.Scene {
     this.input.on(
       Phaser.Input.Events.POINTER_DOWN,
       (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
-        if (over.includes(this.speedButton)) return;
+        if (over.includes(this.speedButton) || over.includes(this.pauseButton)) return;
         if (this.busy) {
           if (pointer.downTime !== this.moveStartTime) this.requestSkip();
           return;
@@ -250,8 +324,34 @@ export class GameScene extends Phaser.Scene {
     onKeyDown(this, 'RIGHT', () => this.moveSelection(1));
     onKeyDown(this, 'ENTER', () => this.confirmSelection());
     onKeyDown(this, 'SPACE', () => this.confirmSelection());
-    onKeyDown(this, 'ESC', () => this.clearSelection());
+    onKeyDown(this, 'ESC', () => (this.selectedPit !== null ? this.clearSelection() : this.openPause()));
+    onKeyDown(this, 'P', () => this.openPause());
     onKeyDown(this, 'F', () => this.cycleSpeed());
+
+    // Gamepad (GDD §3.8.1). An unplugged pad pauses the game (AC-G5).
+    onPadAction(this, (action, slot) => this.onPad(action, slot));
+    onPadDisconnected(this, () => this.openPause(true));
+  }
+
+  private onPad(action: PadAction, slot: number): void {
+    if (action === 'pause') return this.openPause(false);
+    if (action === 'speed') return this.cycleSpeed();
+    if (action === 'confirm' && this.busy) return this.requestSkip(); // any pad can skip
+    if (!this.padMayPlay(slot)) return;
+    if (action === 'left') this.moveSelection(-1);
+    else if (action === 'right') this.moveSelection(1);
+    else if (action === 'confirm') this.confirmSelection();
+    else if (action === 'cancel') this.clearSelection();
+  }
+
+  /**
+   * Two people with two pads: the first pad plays the bottom row (P1), the second the top
+   * row (P2). With one pad, or against the AI, the pad plays for whoever's turn it is (the
+   * AI's turn is already locked by confirmSelection / moveSelection).
+   */
+  private padMayPlay(slot: number): boolean {
+    if (this.opponent !== 'human' || connectedPadCount() < 2) return true;
+    return slot === this.state.current;
   }
 
   // ── Input ──────────────────────────────────────────────────────────────────
@@ -325,6 +425,10 @@ export class GameScene extends Phaser.Scene {
     this.sowingPlayer = before.current;
     const result = playMove(before, pit);
     this.state = result.state;
+    // Save at once (a reload mid-animation resumes after this move). A finished round is
+    // saved as the next round, which is fully determined by it.
+    const nextRound = this.state.phase === 'roundOver' ? startNextRound(this.state) : null;
+    this.saveProgress(nextRound?.state ?? this.state);
     this.refreshTurnUi();
     await this.animate(result.steps, before);
     this.renderBoard(this.state);
@@ -332,7 +436,7 @@ export class GameScene extends Phaser.Scene {
     if (this.state.phase === 'roundOver') {
       await this.wait(this.pauseMs(900));
       const roundEnded = this.state;
-      const next = startNextRound(roundEnded);
+      const next = nextRound ?? startNextRound(roundEnded);
       this.state = next.state;
       this.sowingPlayer = null;
       this.refreshTurnUi(); // new round number while the pits refill
@@ -483,6 +587,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private finishGame(): void {
+    this.finished = true;
     const s = this.state;
     const data: GameOverData = {
       mode: s.mode,
