@@ -8,10 +8,20 @@ const PAUSED = `game.scene.isActive('PauseScene') && game.scene.isPaused('GameSc
 export default [
   reachMenu,
   { name: 'no saved game yet', action: 'expect', expect: { expression: `scene('MainMenuScene').hasSave`, equals: false } },
-  // Settings chosen now must survive the reload below (AC-S2): "ช้า" (202, 208), "5 รอบ" (202, 184).
-  { name: 'pick speed ช้า', action: 'click', x: 2 * 202, y: 2 * 208 },
-  { name: 'pick 5 rounds', action: 'click', x: 2 * 202, y: 2 * 184 },
-  { name: 'key 2 = full game', action: 'press', key: '2' },
+  // Settings chosen now must survive the reload below (AC-S2): speed "ช้า" (202, 158), and
+  // "เกมเต็ม · 5 รอบ" from the length dropdown at (218, 128) (its option at y 128 + 60).
+  { name: 'pick speed ช้า', action: 'click', x: 2 * 202, y: 2 * 158 },
+  { name: 'open the length dropdown', action: 'click', x: 2 * 218, y: 2 * 128 },
+  // Objects made during a click only take input from the next frame on: wait a moment.
+  { name: 'the list is open', action: 'waitFor', expression: `scene('MainMenuScene').dropdownOpen`, timeout: 1000 },
+  { name: 'let the list settle', action: 'wait', ms: 100 },
+  { name: 'pick 5 rounds', action: 'click', x: 2 * 218, y: 2 * 188 },
+  { name: 'a 5-round full game chosen', action: 'expect', expect: { expression: `[scene('MainMenuScene').mode, scene('MainMenuScene').rounds]`, equals: ['full', 5] } },
+  // Keyboard: from "เริ่มเกม" ↑ speed, ↑ length, ↑ ruleset, then → = "แบบตามวิดีโอ".
+  ...['speed', 'length', 'ruleset'].map((row) => ({ name: `↑ to ${row}`, action: 'press', key: 'ArrowUp' })),
+  { name: '→ changes the closed ruleset dropdown', action: 'press', key: 'ArrowRight' },
+  { name: 'video rules chosen', action: 'expect', expect: { expression: `scene('MainMenuScene').ruleset`, equals: 'video' } },
+  { name: 'key 2 = full game (traditional)', action: 'press', key: '2' },
   { name: 'menu closed', action: 'waitFor', expression: `game.scene.isActive('GameScene') && !game.scene.isActive('MainMenuScene')`, timeout: 5000 },
   { name: 'instant sowing', action: 'eval', code: `${GS}.reducedMotion = true; window.__moves = 0;` },
   {
@@ -69,9 +79,9 @@ export default [
   },
   { name: 'still a saved game after the reload', action: 'expect', expect: { expression: `scene('MainMenuScene').hasSave`, equals: true } },
   {
-    name: 'AC-S2: settings survived the reload (speed ช้า, 5 rounds)',
+    name: 'AC-S2: settings survived the reload (speed ช้า, 5-round full game, video rules)',
     action: 'expect',
-    expect: { expression: `[scene('MainMenuScene').speed, scene('MainMenuScene').rounds]`, equals: [0.5, 5] },
+    expect: { expression: `(({ speed, mode, rounds, ruleset }) => [speed, mode, rounds, ruleset])(scene('MainMenuScene'))`, equals: [0.5, 'full', 5, 'video'] },
   },
   // NOTE: after a reload the harness still holds the old <canvas> handle, so only key
   // presses and expressions work from here on (no 'click' or 'screenshot').

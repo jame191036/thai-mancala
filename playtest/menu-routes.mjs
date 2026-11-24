@@ -1,7 +1,7 @@
 // Every menu route of GDD §7 that exists so far (Title → Main Menu → Settings / Stats /
 // Credits → back), settings that survive a reload and reach the game, and statistics
 // counting a finished game. Clicks are base px × 2 (k = 2).
-//   Main menu bottom row: ตั้งค่า (176, 233) · สถิติ (240, 233) · เครดิต (304, 233)
+//   Main menu bottom row: ตั้งค่า (176, 230) · สถิติ (240, 230) · เครดิต (304, 230)
 //   Settings: rows at y 58 / 88 / 118 / 148, options at x 282 / 384, "กลับ" at (240, 186)
 import { TO_MENU } from './lib/common.mjs';
 
@@ -34,7 +34,7 @@ export default [
   { name: 'menu', action: 'screenshot' },
 
   // ── Settings by keyboard ──
-  ...keys('ArrowDown', 4),
+  ...keys('ArrowDown', 1), // focus starts on "เริ่มเกม", the row just above
   { name: 'focus on the bottom row, "ตั้งค่า"', action: 'expect', expect: { expression: `[${MM}.focusRow, ${MM}.focusCol]`, equals: ['pages', 0] } },
   { name: 'Enter opens Settings', action: 'press', key: 'Enter' },
   { name: 'settings screen', action: 'waitFor', expression: `game.scene.isActive('SettingsScene')`, timeout: 3000 },
@@ -68,16 +68,16 @@ export default [
   { name: 'credits', action: 'screenshot' },
   { name: 'Esc = back ', action: 'press', key: 'Escape' },
   { name: 'menu, focus on "เครดิต"', action: 'waitFor', expression: `game.scene.isActive('MainMenuScene') && ${MM}.focusCol === 2`, timeout: 3000 },
-  { name: 'click "สถิติ"', action: 'click', x: 2 * 240, y: 2 * 233 },
+  { name: 'click "สถิติ"', action: 'click', x: 2 * 240, y: 2 * 230 },
   { name: 'stats by mouse', action: 'waitFor', expression: `game.scene.isActive('StatsScene')`, timeout: 3000 },
   { name: 'click "กลับ" on stats', action: 'click', x: 2 * 196, y: 2 * 236 },
   { name: 'menu again', action: 'waitFor', expression: `game.scene.isActive('MainMenuScene')`, timeout: 3000 },
-  { name: 'click "ตั้งค่า"', action: 'click', x: 2 * 176, y: 2 * 233 },
+  { name: 'click "ตั้งค่า"', action: 'click', x: 2 * 176, y: 2 * 230 },
   { name: 'settings by mouse', action: 'waitFor', expression: `game.scene.isActive('SettingsScene')`, timeout: 3000 },
   { name: 'settings were kept', action: 'expect', expect: { expression: `${SET}.values()`, equals: CHOSEN } },
   { name: 'click "กลับ" on settings', action: 'click', x: 2 * 240, y: 2 * 186 },
   { name: 'menu once more', action: 'waitFor', expression: `game.scene.isActive('MainMenuScene')`, timeout: 3000 },
-  { name: 'click "เครดิต"', action: 'click', x: 2 * 304, y: 2 * 233 },
+  { name: 'click "เครดิต"', action: 'click', x: 2 * 304, y: 2 * 230 },
   { name: 'credits by mouse', action: 'waitFor', expression: `game.scene.isActive('CreditsScene')`, timeout: 3000 },
   { name: 'click "กลับ" on credits', action: 'click', x: 2 * 240, y: 2 * 222 },
   { name: 'back on the menu', action: 'waitFor', expression: `game.scene.isActive('MainMenuScene')`, timeout: 3000 },
@@ -96,7 +96,7 @@ export default [
     })()`,
     timeout: 15000,
   },
-  ...keys('ArrowDown', 4),
+  ...keys('ArrowDown', 1), // focus starts on "เริ่มเกม", the row just above
   { name: 'Enter opens Settings ', action: 'press', key: 'Enter' },
   { name: 'settings after the reload', action: 'waitFor', expression: `game.scene.isActive('SettingsScene')`, timeout: 3000 },
   { name: 'AC-S2: the settings survived the reload', action: 'expect', expect: { expression: `${SET}.values()`, equals: CHOSEN } },
@@ -129,7 +129,7 @@ export default [
   { name: 'menu after the game', action: 'waitFor', expression: `game.scene.isActive('MainMenuScene')`, timeout: 3000 },
 
   // ── Stats counted the game ──
-  ...keys('ArrowDown', 4),
+  ...keys('ArrowDown', 1), // focus starts on "เริ่มเกม", the row just above
   { name: '→ "สถิติ"', action: 'press', key: 'ArrowRight' },
   { name: 'Enter opens Stats ', action: 'press', key: 'Enter' },
   { name: 'stats after a game', action: 'waitFor', expression: `game.scene.isActive('StatsScene')`, timeout: 3000 },

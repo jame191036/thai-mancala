@@ -5,6 +5,7 @@
  */
 import type Phaser from 'phaser';
 import { DEFAULT_FULL_GAME_ROUNDS, FULL_GAME_ROUND_OPTIONS } from './logic/rules';
+import type { GameMode, Ruleset } from './logic/types';
 
 const STORAGE_KEY = 'thai-mancala:settings';
 
@@ -88,6 +89,32 @@ export function loadFullGameRounds(registry: Phaser.Data.DataManager): FullGameR
 
 export function saveFullGameRounds(registry: Phaser.Data.DataManager, rounds: FullGameRounds): void {
   save(registry, 'fullGameRounds', rounds);
+}
+
+// ── Last game chosen on the menu (ruleset and length) ───────────────────────
+
+export function parseRuleset(raw: unknown): Ruleset {
+  return raw === 'video' ? 'video' : 'traditional';
+}
+
+export function loadRuleset(registry: Phaser.Data.DataManager): Ruleset {
+  return load(registry, 'ruleset', parseRuleset);
+}
+
+export function saveRuleset(registry: Phaser.Data.DataManager, ruleset: Ruleset): void {
+  save(registry, 'ruleset', ruleset);
+}
+
+export function parseGameMode(raw: unknown): GameMode {
+  return raw === 'full' ? 'full' : 'short';
+}
+
+export function loadGameMode(registry: Phaser.Data.DataManager): GameMode {
+  return load(registry, 'gameMode', parseGameMode);
+}
+
+export function saveGameMode(registry: Phaser.Data.DataManager, mode: GameMode): void {
+  save(registry, 'gameMode', mode);
 }
 
 // ── Settings screen (GDD §7): comfort and accessibility ─────────────────────

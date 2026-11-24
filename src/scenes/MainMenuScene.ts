@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { FULL_GAME_ROUND_OPTIONS } from '../logic/rules';
-import type { Ruleset } from '../logic/types';
+import type { GameMode, Ruleset } from '../logic/types';
 import { COLORS, CSS } from '../display/palette';
 import { addPixelText, type PixelText, type PixelTextStyle } from '../display/pixelText';
 import { onKeyDown } from '../input/keys';
@@ -10,8 +10,12 @@ import {
   SOW_SPEEDS,
   SOW_SPEED_LABEL,
   loadFullGameRounds,
+  loadGameMode,
+  loadRuleset,
   loadSowSpeed,
   saveFullGameRounds,
+  saveGameMode,
+  saveRuleset,
   saveSowSpeed,
   type FullGameRounds,
   type SowSpeed,
@@ -27,21 +31,27 @@ import {
   type MainMenuData,
   type Opponent,
 } from '../types/scenes';
+import { Dropdown } from '../ui/dropdown';
 
-/** Button centres (base px). Playtests click these, so keep them in sync with playtest/*.mjs. */
+/** Positions (base px). Playtests click these, so keep them in sync with playtest/*.mjs. */
 export const MENU_LAYOUT = {
-  opponentY: 58,
+  titleY: 22,
+  opponentY: 56,
   opponentX: [150, 220, 290, 360],
-  shortX: 168,
-  fullX: 312,
-  rows: { traditional: 104, video: 154 },
-  roundsY: 184,
-  roundsX: [148, 202, 256],
-  speedY: 208,
+  /** Dropdowns: centre x and width (left edge lines up with the opponent buttons). */
+  dropdownX: 218,
+  dropdownW: 200,
+  rulesetY: 86,
+  summaryY: 106,
+  lengthY: 128,
+  speedY: 158,
   speedX: [148, 202, 256, 310, 364],
+  startX: 240,
+  startY: 192,
   /** ตั้งค่า / สถิติ / เครดิต (MENU_PAGES) */
-  pagesY: 233,
   pagesX: [176, 240, 304],
+  pagesY: 230,
+  hintY: 256,
 } as const;
 
 const OPPONENT_REGISTRY_KEY = 'opponent';
@@ -49,12 +59,18 @@ const OPPONENT_REGISTRY_KEY = 'opponent';
 /** Small option buttons (choice rows and the bottom row). */
 const CHOICE_STYLE: PixelTextStyle = { size: 12, color: CSS.cream, background: CSS.woodDark, padding: { x: 3, y: 2 } };
 
-type RowId = 'continue' | 'opponent' | 'traditional' | 'video' | 'rounds' | 'speed' | 'pages';
+type RowId = 'continue' | 'opponent' | 'ruleset' | 'length' | 'speed' | 'start' | 'pages';
+
+/** "ความยาว": a short game, or a full game of 3, 5 or 7 rounds (R16). */
+type Length = 'short' | FullGameRounds;
+const LENGTHS: readonly Length[] = ['short', ...FULL_GAME_ROUND_OPTIONS];
+const lengthLabel = (l: Length): string => (l === 'short' ? 'เกมสั้น · 1 รอบ' : `เกมเต็ม · ${l} รอบ`);
 
 /**
  * One line of the menu for keyboard / gamepad focus.
- * - `choice` rows (opponent, rounds, speed): ← → change the value straight away.
- * - `buttons` rows (start buttons, continue): ← → move between buttons, confirm presses one.
+ * - choice rows (opponent, speed): ← → change the value straight away.
+ * - dropdown rows (ruleset, length): ← → change the value, confirm opens the list.
+ * - button rows (start, continue, pages): ← → move between buttons, confirm presses one.
  */
 interface MenuRow {
   id: RowId;
@@ -62,51 +78,62 @@ interface MenuRow {
   /** choice rows: index of the item holding the current value */
   selected?: () => number;
   step?: (dir: 1 | -1) => void;
-  /** buttons rows */
   activate?: (col: number) => void;
+  dropdown?: Pick<Dropdown<unknown>, 'isOpen' | 'nav' | 'refresh'>;
 }
 
 /**
  * Placeholder menu.
- *   "▶ เล่นต่อ"          : only when a game is saved (src/save.ts)
- *   "เล่นกับ"            : 2 คน / AI ง่าย / AI กลาง / AI ยาก
- *   row "แบบดั้งเดิม"   : ruleset 'traditional' (R1–R16) — short / full start buttons
- *   row "แบบตามวิดีโอ" : ruleset 'video' (R17)          — short / full start buttons
- *   "เกมเต็มกี่รอบ"     : 3 / 5 / 7 (R16, saved)
- *   "ความเร็วหว่าน"     : ช้ามาก / ช้า / ปกติ / เร็ว / เร็วมาก (saved)
- *   bottom row          : ตั้งค่า / สถิติ / เครดิต (MENU_PAGES)
- * Mouse, keyboard (↑ ↓ ← → Enter, shortcuts 1–4 and C) and gamepad all work.
+ *   "▶ เล่นต่อ"   : only when a game is saved (src/save.ts)
+ *   "เล่นกับ"     : 2 คน / AI ง่าย / AI กลาง / AI ยาก
+ *   "กติกา"       : dropdown แบบดั้งเดิม (R1–R16) / แบบตามวิดีโอ (R17), its summary below
+ *   "ความยาว"     : dropdown เกมสั้น 1 รอบ / เกมเต็ม 3, 5, 7 รอบ (R16)
+ *   "ความเร็วหว่าน": ช้ามาก … เร็วมาก
+ *   "เริ่มเกม"     : starts the chosen game (focused at first, so Enter / Space / A start)
+ *   bottom row    : ตั้งค่า / สถิติ / เครดิต (MENU_PAGES)
+ * Ruleset, length and speed are remembered (src/settings.ts); the opponent only until the
+ * page is closed. Shortcuts 1–4 still start a game directly.
  */
 export class MainMenuScene extends Phaser.Scene {
   /** Choices for the next game (read by playtests). */
   opponent: Opponent = 'human';
+  ruleset: Ruleset = 'traditional';
+  mode: GameMode = 'short';
   rounds: FullGameRounds = 3;
   speed: SowSpeed = 1;
   /** A game in progress is saved and can be continued. */
   hasSave = false;
   /** Keyboard / gamepad focus. */
-  focusRow: RowId = 'traditional';
+  focusRow: RowId = 'start';
   focusCol = 0;
 
   private rows: MenuRow[] = [];
-  private fullButtons: PixelText[] = [];
+  private summary!: PixelText;
   private focusFrame!: Phaser.GameObjects.Rectangle;
 
   constructor() {
     super(SceneKeys.MainMenu);
   }
 
+  /** A dropdown list is open (read by playtests). */
+  get dropdownOpen(): boolean {
+    return this.rows.some((r) => r.dropdown?.isOpen);
+  }
+
   create(data: MainMenuData = {}): void {
-    this.opponent = (this.registry.get(OPPONENT_REGISTRY_KEY) as Opponent | undefined) ?? 'human';
-    this.rounds = loadFullGameRounds(this.registry);
-    this.speed = loadSowSpeed(this.registry);
+    const reg = this.registry;
+    this.opponent = (reg.get(OPPONENT_REGISTRY_KEY) as Opponent | undefined) ?? 'human';
+    this.ruleset = loadRuleset(reg);
+    this.mode = loadGameMode(reg);
+    this.rounds = loadFullGameRounds(reg);
+    this.speed = loadSowSpeed(reg);
     this.rows = [];
-    this.fullButtons = [];
-    this.focusRow = 'traditional';
+    this.focusRow = 'start';
     this.focusCol = 0;
+    const L = MENU_LAYOUT;
     const { width } = this.scale;
 
-    this.text(width / 2, 22, 'หมากขุม', 30, CSS.gold);
+    this.text(width / 2, L.titleY, 'หมากขุม', 30, CSS.gold);
 
     // ── Continue a saved game (only when one exists) ──
     const saved = loadSavedGame();
@@ -117,10 +144,9 @@ export class MainMenuScene extends Phaser.Scene {
     if (saved) {
       const s = saved.state;
       const info = s.mode === 'full' ? `รอบ ${s.round}/${s.maxRounds}` : 'เกมสั้น';
-      const b = addPixelText(this, 470, 22, `▶ เล่นต่อ (${info})`, {
+      const b = addPixelText(this, 470, L.titleY, `▶ เล่นต่อ (${info})`, {
         size: 12,
         color: CSS.pitShadow,
-        bold: true,
         background: CSS.gold,
         padding: { x: 6, y: 3 },
       })
@@ -132,33 +158,47 @@ export class MainMenuScene extends Phaser.Scene {
     }
 
     // ── Opponent ──
-    this.choiceRow('opponent', 'เล่นกับ:', MENU_LAYOUT.opponentY, MENU_LAYOUT.opponentX, 64, OPPONENTS, (o) => OPPONENT_LABEL[o], () => this.opponent, (o) => this.setOpponent(o));
+    this.choiceRow('opponent', 'เล่นกับ:', L.opponentY, L.opponentX, 64, OPPONENTS, (o) => OPPONENT_LABEL[o], () => this.opponent, (o) => {
+      this.opponent = o;
+      reg.set(OPPONENT_REGISTRY_KEY, o);
+    });
 
-    // ── Start buttons: one per ruleset × length ──
-    const start = (ruleset: Ruleset, length: 'short' | 'full') => {
-      const data: GameSceneData =
-        length === 'short'
-          ? { mode: 'short', ruleset, opponent: this.opponent }
-          : { mode: 'full', maxRounds: this.rounds, ruleset, opponent: this.opponent };
-      this.scene.start(SceneKeys.Game, data);
-    };
-    for (const ruleset of ['traditional', 'video'] as const) {
-      const y = MENU_LAYOUT.rows[ruleset];
-      this.text(width / 2, y - 25, `${RULESET_NAME[ruleset]} · ${RULESET_SUMMARY[ruleset]}`, 12, CSS.gold);
-      const shortBtn = this.startButton(MENU_LAYOUT.shortX, y, 'เกมสั้น · 1 รอบ', () => start(ruleset, 'short'));
-      const fullBtn = this.startButton(MENU_LAYOUT.fullX, y, '', () => start(ruleset, 'full'));
-      this.fullButtons.push(fullBtn);
-      this.rows.push({ id: ruleset, items: [shortBtn, fullBtn], activate: (col) => start(ruleset, col === 0 ? 'short' : 'full') });
-    }
+    // ── Ruleset ──
+    this.dropdownRow('ruleset', 'กติกา:', L.rulesetY, ['traditional', 'video'] as Ruleset[], (r) => RULESET_NAME[r], () => this.ruleset, (r) => {
+      this.ruleset = r;
+      saveRuleset(reg, r);
+    });
+    this.summary = addPixelText(this, L.dropdownX - L.dropdownW / 2 + 2, L.summaryY, '', { size: 12, color: CSS.gold }).setOrigin(0, 0.5);
 
-    // ── Settings rows ──
-    this.choiceRow('rounds', 'เกมเต็มกี่รอบ:', MENU_LAYOUT.roundsY, MENU_LAYOUT.roundsX, 50, FULL_GAME_ROUND_OPTIONS, (n) => `${n} รอบ`, () => this.rounds, (n) => this.setRounds(n));
-    this.choiceRow('speed', 'ความเร็วหว่าน:', MENU_LAYOUT.speedY, MENU_LAYOUT.speedX, 50, SOW_SPEEDS, (s) => SOW_SPEED_LABEL[s], () => this.speed, (s) => this.setSpeed(s));
+    // ── Length ──
+    this.dropdownRow('length', 'ความยาว:', L.lengthY, LENGTHS, lengthLabel, () => (this.mode === 'short' ? 'short' : this.rounds), (l) => {
+      this.setMode(l === 'short' ? 'short' : 'full');
+      if (l !== 'short') this.setRounds(l);
+    });
+
+    // ── Speed ──
+    this.choiceRow('speed', 'ความเร็วหว่าน:', L.speedY, L.speedX, 50, SOW_SPEEDS, (s) => SOW_SPEED_LABEL[s], () => this.speed, (s) => {
+      this.speed = s;
+      saveSowSpeed(reg, s);
+    });
+
+    // ── Start ──
+    const startBtn = addPixelText(this, L.startX, L.startY, 'เริ่มเกม', {
+      size: 16,
+      color: CSS.pitShadow,
+      bold: true,
+      background: CSS.gold,
+      padding: { x: 8, y: 3 },
+      fixedWidth: 160,
+    })
+      .setInteractive({ useHandCursor: true })
+      .once('pointerdown', () => this.startChosen());
+    this.rows.push({ id: 'start', items: [startBtn], activate: () => this.startChosen() });
 
     // ── Other screens ──
     const openPage = (i: number) => this.scene.start(MENU_PAGES[i].key);
     const pageButtons = MENU_PAGES.map((page, i) =>
-      addPixelText(this, MENU_LAYOUT.pagesX[i], MENU_LAYOUT.pagesY, page.label, { ...CHOICE_STYLE, fixedWidth: 56 })
+      addPixelText(this, L.pagesX[i], L.pagesY, page.label, { ...CHOICE_STYLE, fixedWidth: 56 })
         .setInteractive({ useHandCursor: true })
         .once('pointerdown', () => openPage(i)),
     );
@@ -171,7 +211,7 @@ export class MainMenuScene extends Phaser.Scene {
     this.focusFrame = this.add.rectangle(0, 0, 10, 10).setStrokeStyle(2, COLORS.cream).setDepth(5);
     this.refreshAll();
 
-    this.text(width / 2, 258, `↑ ↓ ← → เลือก · Enter / จอย A เริ่ม · ปุ่มลัด 1–4${this.hasSave ? ' · C เล่นต่อ' : ''} · AI เล่นแถวบน`, 12, CSS.dim, false);
+    this.text(width / 2, L.hintY, `↑ ↓ ← → เลือก · Enter / จอย A ตกลง · ปุ่มลัด 1–4${this.hasSave ? ' · C เล่นต่อ' : ''} · AI เล่นแถวบน`, 12, CSS.dim, false);
 
     // ── Keyboard & gamepad ──
     onKeyDown(this, 'UP', () => this.nav('up'));
@@ -180,16 +220,36 @@ export class MainMenuScene extends Phaser.Scene {
     onKeyDown(this, 'RIGHT', () => this.nav('right'));
     onKeyDown(this, 'ENTER', () => this.nav('confirm'));
     onKeyDown(this, 'SPACE', () => this.nav('confirm'));
+    onKeyDown(this, 'ESC', () => this.nav('cancel'));
     const kb = this.input.keyboard;
-    kb?.once('keydown-ONE', () => start('traditional', 'short'));
-    kb?.once('keydown-TWO', () => start('traditional', 'full'));
-    kb?.once('keydown-THREE', () => start('video', 'short'));
-    kb?.once('keydown-FOUR', () => start('video', 'full'));
+    kb?.once('keydown-ONE', () => this.start('traditional', 'short'));
+    kb?.once('keydown-TWO', () => this.start('traditional', 'full'));
+    kb?.once('keydown-THREE', () => this.start('video', 'short'));
+    kb?.once('keydown-FOUR', () => this.start('video', 'full'));
     onPadAction(this, (action) => this.nav(action));
+  }
+
+  /** Start the game chosen on the menu ("เริ่มเกม"). */
+  startChosen(): void {
+    this.start(this.ruleset, this.mode);
+  }
+
+  private start(ruleset: Ruleset, mode: GameMode): void {
+    const data: GameSceneData =
+      mode === 'short'
+        ? { mode: 'short', ruleset, opponent: this.opponent }
+        : { mode: 'full', maxRounds: this.rounds, ruleset, opponent: this.opponent };
+    this.scene.start(SceneKeys.Game, data);
   }
 
   /** Keyboard / gamepad navigation. */
   private nav(action: PadAction): void {
+    const open = this.rows.find((r) => r.dropdown?.isOpen)?.dropdown;
+    if (open) {
+      open.nav(action);
+      this.refreshAll();
+      return;
+    }
     const r = this.rows.findIndex((row) => row.id === this.focusRow);
     const row = this.rows[r];
     switch (action) {
@@ -202,8 +262,10 @@ export class MainMenuScene extends Phaser.Scene {
       case 'left':
       case 'right': {
         const dir = action === 'left' ? -1 : 1;
-        if (row.step) row.step(dir);
-        else this.setFocus(row.id, Math.max(0, Math.min(row.items.length - 1, this.focusCol + dir)));
+        if (row.step) {
+          row.step(dir);
+          this.refreshAll();
+        } else this.setFocus(row.id, Math.max(0, Math.min(row.items.length - 1, this.focusCol + dir)));
         break;
       }
       case 'confirm':
@@ -220,31 +282,24 @@ export class MainMenuScene extends Phaser.Scene {
     this.refreshAll();
   }
 
-  private setOpponent(opponent: Opponent): void {
-    this.opponent = opponent;
-    this.registry.set(OPPONENT_REGISTRY_KEY, opponent);
-    this.refreshAll();
+  private setMode(mode: GameMode): void {
+    this.mode = mode;
+    saveGameMode(this.registry, mode);
   }
 
   private setRounds(rounds: FullGameRounds): void {
     this.rounds = rounds;
     saveFullGameRounds(this.registry, rounds);
-    this.refreshAll();
-  }
-
-  private setSpeed(speed: SowSpeed): void {
-    this.speed = speed;
-    saveSowSpeed(this.registry, speed);
-    this.refreshAll();
   }
 
   private refreshAll(): void {
     for (const row of this.rows) {
+      row.dropdown?.refresh();
       if (!row.selected) continue;
       const sel = row.selected();
       row.items.forEach((b, i) => b.restyle({ color: i === sel ? CSS.pitShadow : CSS.cream, background: i === sel ? CSS.gold : CSS.woodDark }));
     }
-    for (const b of this.fullButtons) b.setText(`เกมเต็ม · ${this.rounds} รอบ`);
+    this.summary?.setText(RULESET_SUMMARY[this.ruleset]);
 
     // Frame the focused item: the chosen value in a choice row, else the focused button.
     const row = this.rows.find((r) => r.id === this.focusRow);
@@ -254,6 +309,31 @@ export class MainMenuScene extends Phaser.Scene {
       this.focusFrame.setPosition(b.centerX, b.centerY).setSize(b.width + 4, b.height + 4);
       this.focusFrame.setVisible(true);
     }
+  }
+
+  private rowLabel(x: number, y: number, label: string): void {
+    this.text(x, y, label, 12, CSS.dim).setOrigin(1, 0.5);
+  }
+
+  private dropdownRow<T>(id: RowId, label: string, y: number, values: readonly T[], labelOf: (v: T) => string, get: () => T, set: (v: T) => void): void {
+    const L = MENU_LAYOUT;
+    this.rowLabel(L.dropdownX - L.dropdownW / 2 - 6, y, label);
+    const dd = new Dropdown<T>(this, {
+      x: L.dropdownX,
+      y,
+      width: L.dropdownW,
+      values,
+      labelOf,
+      get,
+      // Like the choice rows, a mouse pick leaves the keyboard focus where it was, so
+      // Enter / Space still start the game afterwards. While a list is open, nav() sends
+      // the keys to it whichever row has the focus.
+      set: (v) => {
+        set(v);
+        this.refreshAll();
+      },
+    });
+    this.rows.push({ id, items: [dd.box], step: (dir) => dd.step(dir), activate: () => dd.open(), dropdown: dd });
   }
 
   private choiceRow<T>(
@@ -268,12 +348,14 @@ export class MainMenuScene extends Phaser.Scene {
     onPick: (v: T) => void,
   ): void {
     // Right-aligned just left of the first button, so long labels never overlap it.
-    this.text(xs[0] - buttonWidth / 2 - 6, y, label, 12, CSS.dim).setOrigin(1, 0.5);
+    this.rowLabel(xs[0] - buttonWidth / 2 - 6, y, label);
     const items = values.map((v, i) => {
       const b = addPixelText(this, xs[i], y, labelOf(v), { ...CHOICE_STYLE, fixedWidth: buttonWidth }).setInteractive({ useHandCursor: true });
-      // A mouse pick does not move the keyboard/gamepad focus (Space still starts the
-      // focused game afterwards).
-      b.on('pointerdown', () => onPick(v));
+      // A mouse pick does not move the keyboard/gamepad focus (Enter still starts the game).
+      b.on('pointerdown', () => {
+        onPick(v);
+        this.refreshAll();
+      });
       return b;
     });
     const step = (dir: 1 | -1) => {
@@ -281,19 +363,6 @@ export class MainMenuScene extends Phaser.Scene {
       onPick(values[Math.max(0, Math.min(values.length - 1, i + dir))]);
     };
     this.rows.push({ id, items, selected: () => values.indexOf(current()), step });
-  }
-
-  private startButton(x: number, y: number, label: string, onClick: () => void): PixelText {
-    return addPixelText(this, x, y, label, {
-      size: 13,
-      color: CSS.cream,
-      bold: true,
-      background: CSS.woodDark,
-      padding: { x: 8, y: 4 },
-      fixedWidth: 128,
-    })
-      .setInteractive({ useHandCursor: true })
-      .once('pointerdown', onClick);
   }
 
   private text(x: number, y: number, s: string, size: number, color: string, bold = true): PixelText {

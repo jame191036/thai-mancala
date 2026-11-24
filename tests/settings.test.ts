@@ -8,15 +8,21 @@ import {
   VIBRATION,
   loadFlag,
   loadFullGameRounds,
+  loadGameMode,
+  loadRuleset,
   loadSowSpeed,
   loadTouchConfirm,
   nextSowSpeed,
   parseFlag,
   parseFullGameRounds,
+  parseGameMode,
+  parseRuleset,
   parseSowSpeed,
   parseTouchConfirm,
   saveFlag,
   saveFullGameRounds,
+  saveGameMode,
+  saveRuleset,
   saveSowSpeed,
   saveTouchConfirm,
 } from '../src/settings';
@@ -77,6 +83,29 @@ describe('full game round count setting (R16)', () => {
     expect(loadFullGameRounds(registry)).toBe(3);
     saveFullGameRounds(registry, 7);
     expect(loadFullGameRounds(registry)).toBe(7);
+  });
+});
+
+describe('last game chosen on the menu', () => {
+  it('ruleset: traditional unless video was chosen', () => {
+    expect([parseRuleset('video'), parseRuleset('traditional'), parseRuleset('kalah'), parseRuleset(undefined)]).toEqual([
+      'video',
+      'traditional',
+      'traditional',
+      'traditional',
+    ]);
+    const registry = fakeRegistry();
+    expect(loadRuleset(registry)).toBe('traditional');
+    saveRuleset(registry, 'video');
+    expect(loadRuleset(registry)).toBe('video');
+  });
+
+  it('length: a short game unless a full game was chosen', () => {
+    expect([parseGameMode('full'), parseGameMode('short'), parseGameMode(3), parseGameMode(null)]).toEqual(['full', 'short', 'short', 'short']);
+    const registry = fakeRegistry();
+    expect(loadGameMode(registry)).toBe('short');
+    saveGameMode(registry, 'full');
+    expect(loadGameMode(registry)).toBe('full');
   });
 });
 

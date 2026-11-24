@@ -66,6 +66,11 @@ export default [
   { name: 'Phaser sees the pad', action: 'expect', expect: { expression: `scene('MainMenuScene').input.gamepad.getAll().length`, equals: 1 } },
 
   // ── AC-G3 (1/2): menu → game with the pad only ──
+  // Focus starts on "เริ่มเกม"; rows above it: speed, length, ruleset, opponent.
+  { name: 'focus starts on "เริ่มเกม"', action: 'expect', expect: { expression: `scene('MainMenuScene').focusRow`, equals: 'start' } },
+  ...tap('D-pad ↑', UP),
+  ...tap('D-pad ↑', UP),
+  ...tap('D-pad ↑', UP),
   ...tap('D-pad ↑', UP),
   { name: 'focus on the opponent row', action: 'expect', expect: { expression: `scene('MainMenuScene').focusRow`, equals: 'opponent' } },
   ...tap('D-pad →', RIGHT),
@@ -75,10 +80,22 @@ export default [
   { name: 'tilt the left stick down', action: 'eval', code: `window.__pads[0].axes[1] = 1;` },
   { name: 'hold it briefly (shorter than the repeat delay)', action: 'wait', ms: 120 },
   { name: 'centre the stick', action: 'eval', code: `window.__pads[0].axes[1] = 0;` },
-  { name: 'stick moved the focus down one row', action: 'expect', expect: { expression: `scene('MainMenuScene').focusRow`, equals: 'traditional' } },
-  ...tap('A on "เกมสั้น"', A),
+  { name: 'stick moved the focus down one row', action: 'expect', expect: { expression: `scene('MainMenuScene').focusRow`, equals: 'ruleset' } },
+  // The ruleset dropdown with the pad: A opens, ↓ highlights, A picks; → / ← change it closed.
+  ...tap('A opens the ruleset dropdown', A),
+  { name: 'the list is open', action: 'expect', expect: { expression: `scene('MainMenuScene').dropdownOpen`, equals: true } },
+  ...tap('D-pad ↓ in the list', DOWN),
+  ...tap('A picks the highlighted option', A),
+  { name: 'video rules picked, list closed', action: 'expect', expect: { expression: `[scene('MainMenuScene').ruleset, scene('MainMenuScene').dropdownOpen]`, equals: ['video', false] } },
+  ...tap('D-pad ← on the closed dropdown', LEFT),
+  { name: '← went back to the traditional rules', action: 'expect', expect: { expression: `scene('MainMenuScene').ruleset`, equals: 'traditional' } },
+  ...tap('D-pad ↓', DOWN),
+  ...tap('D-pad ↓', DOWN),
+  ...tap('D-pad ↓', DOWN),
+  { name: 'focus back on "เริ่มเกม"', action: 'expect', expect: { expression: `scene('MainMenuScene').focusRow`, equals: 'start' } },
+  ...tap('A on "เริ่มเกม"', A),
   { name: 'the game starts', action: 'waitFor', expression: `game.scene.isActive('GameScene') && !game.scene.isActive('MainMenuScene')`, timeout: 5000 },
-  { name: 'a two-player short game', action: 'expect', expect: { expression: `[${GS}.state.mode, ${GS}.opponent]`, equals: ['short', 'human'] } },
+  { name: 'a two-player short game, traditional rules', action: 'expect', expect: { expression: `[${GS}.state.mode, ${GS}.state.ruleset, ${GS}.opponent]`, equals: ['short', 'traditional', 'human'] } },
 
   // ── AC-G1: pits 1–2 empty; from pit 0, D-pad → lands on pit 3 ──
   // Video rules for this board: the move from pit 3 ends on an occupied P2 pit (no relay),
@@ -185,7 +202,7 @@ export default [
   settle('menu'),
 
   // ── Result screen: ← → + A (keyboard ← → too) ──
-  ...tap('A on "เกมสั้น" (traditional)', A),
+  ...tap('A on "เริ่มเกม" (traditional short)', A),
   { name: 'new game', action: 'waitFor', expression: `game.scene.isActive('GameScene') && !game.scene.isActive('MainMenuScene')`, timeout: 5000 },
   { name: 'instant sowing', action: 'eval', code: `${GS}.reducedMotion = true;` },
   {
@@ -216,7 +233,7 @@ export default [
   // ── Rumble on a capture (GDD §3.8.1), and the Settings switch that turns it off ──
   // P1 sows its single seed in pit 5 into the empty pit 6 and captures pit 8 (7 + 1 = 8).
   settle('menu after the result'),
-  ...tap('A on "เกมสั้น" again', A),
+  ...tap('A on "เริ่มเกม" again', A),
   { name: 'another game', action: 'waitFor', expression: `game.scene.isActive('GameScene') && !game.scene.isActive('MainMenuScene')`, timeout: 5000 },
   ...[true, false].flatMap((on) => [
     {
