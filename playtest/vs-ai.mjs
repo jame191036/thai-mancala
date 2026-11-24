@@ -34,7 +34,7 @@ export default [
     action: 'eval',
     code: `window.__before = JSON.stringify(${GS}.state.pits); window.__aiBefore = ${GS}.aiMoves;`,
   },
-  { name: 'click P2 pit 10 (top row)', action: 'click', x: 2 * 284, y: 2 * 106 },
+  { name: 'click P2 pit 10 (top row)', action: 'click', x: 2 * 284, y: 2 * 112 },
   {
     name: 'the click did not start a move for the human',
     action: 'expect',

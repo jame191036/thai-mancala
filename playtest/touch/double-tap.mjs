@@ -7,8 +7,8 @@ import { reachMenu } from '../lib/common.mjs';
 const GS = `scene('GameScene')`;
 const Z = 4 / 3;
 const tap = (name, x, y) => ({ name, action: 'tap', x: Math.round(x * Z), y: Math.round(y * Z) });
-// Bottom row (P1) pit i is at x = 108 + 44 i, y = 164 (src/display/boardLayout.ts).
-const pit = (i) => [108 + 44 * i, 164];
+// Bottom row (P1) pit i is at x = 108 + 44 i, y = 158 (src/display/boardLayout.ts).
+const pit = (i) => [108 + 44 * i, 158];
 
 export default [
   reachMenu,

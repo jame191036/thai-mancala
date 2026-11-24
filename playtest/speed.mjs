@@ -22,7 +22,7 @@ export default [
   },
   { name: 'restart with P1 first (the setting carries over)', action: 'scene', key: 'GameScene', data: { mode: 'short', firstPlayer: 0 } },
   { name: 'the game uses ช้ามาก', action: 'expect', expect: { expression: `${GS}.speed`, equals: 0.25 } },
-  { name: 'click P1 pit 2', action: 'click', x: 392, y: 328 },
+  { name: 'click P1 pit 2', action: 'click', x: 392, y: 316 },
   { name: '1 second later', action: 'wait', ms: 1000 },
   {
     name: 'still sowing, and the store has not been reached yet (it would have at ปกติ)',

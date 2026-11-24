@@ -17,9 +17,9 @@ export class PreloaderScene extends Phaser.Scene {
       bar.width = barWidth * p;
     });
 
-    // The board is drawn with placeholder shapes for now (circles + numbers), so there is
-    // nothing to load yet. Real pixel art goes in public/assets/ and loads here, e.g.:
-    // this.load.atlas('board', 'assets/board.png', 'assets/board.json');
+    // Pixel art, drawn by tools/art/ (GDD §8).
+    this.load.image('board', 'assets/board.png');
+    this.load.spritesheet('seeds', 'assets/seeds.png', { frameWidth: 8, frameHeight: 8 });
   }
 
   create(): void {

@@ -43,7 +43,7 @@ export default [
   // A real click: no relay in this ruleset. P1 pit 2 (7 seeds) → 3,4,5,6,store,8,9; pit 9
   // already had seeds, so the turn simply ends (the traditional rules would relay here).
   { name: 'restart with P1 first', action: 'scene', key: 'GameScene', data: { mode: 'short', ruleset: 'video', firstPlayer: 0 } },
-  { name: 'click P1 pit 2', action: 'click', x: 392, y: 328 },
+  { name: 'click P1 pit 2', action: 'click', x: 392, y: 316 },
   { name: 'sowing starts', action: 'waitFor', expression: `${GS}.busy === true`, timeout: 1000, poll: 20 },
   { name: 'sowing ends', action: 'waitFor', expression: `${GS}.busy === false`, timeout: 15000 },
   {

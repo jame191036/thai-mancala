@@ -16,7 +16,7 @@ export default [
   {
     name: 'instant sowing',
     action: 'eval',
-    code: `${GS}.reducedMotion = true; window.__maxRound = 1; window.__sawDead = false; window.__deadShown = 0; window.__deadWrong = []; window.__checks = 0;`,
+    code: `${GS}.reducedMotion = true; window.__maxRound = 1; window.__sawDead = false; window.__deadShown = 0; window.__deadWrong = []; window.__checks = 0; window.__marblesWrong = 0;`,
   },
   {
     // Between moves the screen must show exactly the engine's dead pits (AC-R10–R12 on
@@ -33,6 +33,9 @@ export default [
         const shown = s.displayedDead();
         if (JSON.stringify(shown) !== JSON.stringify(s.state.dead)) window.__deadWrong.push(s.state.round);
         if (shown.some(Boolean)) window.__deadShown += 1;
+        // Every seed has its marble while the slot has room (25 in a pit, 60 in a store at least).
+        const marbles = s.displayedSeeds();
+        if (s.state.pits.some((n, i) => (n <= (i === 7 || i === 15 ? 60 : 25) ? marbles[i] !== n : marbles[i] > n))) window.__marblesWrong += 1;
         s.choosePit(s.legalPits()[0]);
       }
       return false;
@@ -44,6 +47,7 @@ export default [
   { name: 'dead pits appeared between rounds', action: 'expect', expect: { expression: `window.__sawDead`, equals: true } },
   { name: 'the board was checked before every move', action: 'expect', expect: { expression: `window.__checks`, atLeast: 20 } },
   { name: 'dead pits were drawn on screen', action: 'expect', expect: { expression: `window.__deadShown`, atLeast: 1 } },
+  { name: 'the marbles always matched the seed counts', action: 'expect', expect: { expression: `window.__marblesWrong`, equals: 0 } },
   { name: 'AC-R10–R12: the screen always matched the engine\'s dead pits', action: 'expect', expect: { expression: `window.__deadWrong`, equals: [] } },
   {
     name: 'the game ended by R16 or R15',

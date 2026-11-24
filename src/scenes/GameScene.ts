@@ -2,7 +2,9 @@ import Phaser from 'phaser';
 import { BOARD_SIZE, P1_STORE, isStore, otherPlayer, storeOf } from '../logic/board';
 import { createGame, isLegalMove, legalMoves, playMove, randomPlayer, startNextRound } from '../logic/rules';
 import type { GameState, PitIndex, Player, Step } from '../logic/types';
-import { LAYOUT, handPosition, slotPosition } from '../display/boardLayout';
+import { LAYOUT, countPosition, handPosition, slotPosition } from '../display/boardLayout';
+import { seedSpots } from '../display/seedLayout';
+import { FLYING_FRAME, SEEDS_TEXTURE, SEED_ORIGIN, SeedPiles } from '../display/seedPiles';
 import { COLORS, CSS, PLAYER_COLOR, PLAYER_CSS } from '../display/palette';
 import { addPixelText, type PixelText } from '../display/pixelText';
 import {
@@ -40,7 +42,8 @@ const BASE_DROP_MS = 120;
 const AI_THINK_MS: Record<AiLevel, number> = { easy: 750, medium: 650, hard: 350 };
 
 interface SlotView {
-  shape: Phaser.GameObjects.Arc | Phaser.GameObjects.Rectangle;
+  /** Ring drawn over the bowl: whose turn it is, hover, selection, dead. */
+  shape: Phaser.GameObjects.Arc;
   label: PixelText;
 }
 
@@ -85,6 +88,7 @@ export class GameScene extends Phaser.Scene {
   dropTimes: number[] = [];
 
   private slots: SlotView[] = [];
+  private piles!: SeedPiles;
   /** What the screen currently shows (follows the steps during an animation). */
   private shown: number[] = [];
   private shownDead: boolean[] = [];
@@ -210,6 +214,11 @@ export class GameScene extends Phaser.Scene {
     return this.slots.map((s) => s.label.text === '×');
   }
 
+  /** Marbles drawn in each slot (a very full slot shows fewer than its number). */
+  displayedSeeds(): number[] {
+    return this.slots.map((_, i) => this.piles.count(i));
+  }
+
   /** P2's name label is drawn upside down ("หันหน้าเข้าหากัน"). */
   get p2UpsideDown(): boolean {
     return this.p2Label.rotation !== 0;
@@ -296,10 +305,8 @@ export class GameScene extends Phaser.Scene {
 
   private drawBoard(): void {
     const { board } = LAYOUT;
-    this.add
-      .rectangle(board.x, board.y, board.width, board.height, COLORS.woodMid)
-      .setOrigin(0)
-      .setStrokeStyle(2, COLORS.woodDark);
+    this.add.image(board.x, board.y, 'board').setOrigin(0);
+    this.piles = new SeedPiles(this);
   }
 
   private createSlots(): void {
@@ -307,12 +314,10 @@ export class GameScene extends Phaser.Scene {
       const { x, y } = slotPosition(i);
       if (isStore(i)) {
         const owner: Player = i === P1_STORE ? 0 : 1;
-        const shape = this.add
-          .rectangle(x, y, LAYOUT.store.width, LAYOUT.store.height, COLORS.pitShadow)
-          .setStrokeStyle(2, PLAYER_COLOR[owner]);
-        const tag = this.label(x, y - LAYOUT.store.height / 2 + 10, owner === 0 ? 'P1' : 'P2', 10, PLAYER_CSS[owner])
-          .setOrigin(0.5);
-        const label = this.label(x, y, '0', 18, CSS.cream, true).setOrigin(0.5);
+        const shape = this.add.circle(x, y, LAYOUT.store.radius).setStrokeStyle(1, PLAYER_COLOR[owner]);
+        const count = countPosition(i);
+        const label = this.label(count.x, count.y, '0', 18, CSS.cream, true).setOrigin(0.5);
+        const tag = this.label(count.x - 26, count.y, owner === 0 ? 'P1' : 'P2', 10, PLAYER_CSS[owner]).setOrigin(0.5);
         if (this.facing && owner === 1) {
           tag.setRotation(Math.PI);
           label.setRotation(Math.PI);
@@ -321,8 +326,9 @@ export class GameScene extends Phaser.Scene {
         continue;
       }
 
-      const shape = this.add.circle(x, y, LAYOUT.pitRadius, COLORS.pitShadow).setStrokeStyle(1, COLORS.woodLight);
-      const label = this.label(x, y, '0', 12, CSS.cream, true).setOrigin(0.5);
+      const shape = this.add.circle(x, y, LAYOUT.pitRadius);
+      const count = countPosition(i);
+      const label = this.label(count.x, count.y, '0', 12, CSS.cream, true).setOrigin(0.5);
       // "หันหน้าเข้าหากัน": the person across the table reads P2's numbers the right way up.
       if (this.facing && i > P1_STORE) label.setRotation(Math.PI);
       this.slots[i] = { shape, label };
@@ -685,6 +691,7 @@ export class GameScene extends Phaser.Scene {
     this.slots.forEach((slot, i) => {
       slot.shape.setScale(1);
       slot.label.setText(this.shownDead[i] ? '×' : String(this.shown[i]));
+      this.piles.set(i, this.shown[i]);
     });
     this.refreshPitStyles();
   }
@@ -693,11 +700,8 @@ export class GameScene extends Phaser.Scene {
     this.shown[index] = seeds;
     const slot = this.slots[index];
     slot.label.setText(this.shownDead[index] ? '×' : String(seeds));
-    if (pulse && !this.reducedMotion && !this.skipRequested) {
-      this.tweens.killTweensOf(slot.shape);
-      slot.shape.setScale(1);
-      this.tweens.add({ targets: slot.shape, scale: 1.15, duration: 70, yoyo: true });
-    }
+    this.piles.set(index, seeds);
+    if (pulse && !this.reducedMotion && !this.skipRequested) this.piles.bounce(index);
   }
 
   private setDead(index: PitIndex, dead: boolean): void {
@@ -711,7 +715,7 @@ export class GameScene extends Phaser.Scene {
     const legal = new Set(humanToPlay ? this.legalPits() : []);
     const cur = this.state.current;
     this.slots.forEach((slot, i) => {
-      if (isStore(i) || !(slot.shape instanceof Phaser.GameObjects.Arc)) return;
+      if (isStore(i)) return;
       const shape = slot.shape;
       if (this.shownDead[i]) {
         shape.setFillStyle(COLORS.dead, 0.7).setStrokeStyle(1, COLORS.dead);
@@ -720,11 +724,11 @@ export class GameScene extends Phaser.Scene {
       }
       slot.label.setColor(CSS.cream);
       if (this.selectedPit === i) {
-        shape.setFillStyle(COLORS.gold, 0.45).setStrokeStyle(3, COLORS.gold);
+        shape.setFillStyle(COLORS.gold, 0.3).setStrokeStyle(3, COLORS.gold);
       } else if (legal.has(i)) {
-        shape.setFillStyle(this.hoverPit === i ? COLORS.woodDark : COLORS.pitShadow).setStrokeStyle(2, PLAYER_COLOR[cur]);
+        shape.setFillStyle(COLORS.gold, this.hoverPit === i ? 0.18 : 0).setStrokeStyle(2, PLAYER_COLOR[cur]);
       } else {
-        shape.setFillStyle(COLORS.pitShadow).setStrokeStyle(1, COLORS.woodLight);
+        shape.setFillStyle(COLORS.gold, 0).setStrokeStyle();
       }
     });
   }
@@ -833,14 +837,12 @@ export class GameScene extends Phaser.Scene {
     if (ms <= 0 || this.skipRequested) return;
     const a = slotPosition(from);
     const b = slotPosition(to);
-    const blob = this.add
-      .container(a.x, a.y, [
-        this.add.circle(0, 0, 10, COLORS.seedLight).setStrokeStyle(1, COLORS.gold),
-        this.label(0, 0, String(count), 10, CSS.cream, true).setOrigin(0.5),
-      ])
-      .setDepth(11);
-    await this.tweenAsync({ targets: blob, x: b.x, y: b.y, duration: ms, ease: 'Quad.InOut' });
-    blob.destroy();
+    const marbles = seedSpots(from)
+      .slice(0, count)
+      .map((s) => this.add.image(s.dx, s.dy, SEEDS_TEXTURE, FLYING_FRAME + s.variant).setOrigin(SEED_ORIGIN));
+    const handful = this.add.container(a.x, a.y, marbles).setDepth(11);
+    await this.tweenAsync({ targets: handful, x: b.x, y: b.y, duration: ms, ease: 'Quad.InOut' });
+    handful.destroy();
   }
 
   private wait(ms: number): Promise<void> {

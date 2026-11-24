@@ -32,7 +32,7 @@ export class CreditsScene extends Phaser.Scene {
     line(134, 'THAILEX: mahk khum (หมากขุม) · thailex.info');
     line(150, 'แบบตามวิดีโอ: youtube.com/watch?v=ZwP1hlU_m_c');
 
-    line(174, 'งานภาพ: กราฟิกชั่วคราว · เสียง: ยังไม่มี', CSS.dim);
+    line(174, 'งานภาพ: กระดานและลูกแก้ววาดขึ้นใหม่สำหรับเกมนี้ · เสียง: ยังไม่มี', CSS.dim);
     line(190, 'ไม่ได้ลอกลายหรือภาพจากงานที่มีลิขสิทธิ์', CSS.dim);
 
     const back = addButton(this, width / 2, CREDITS_LAYOUT.backY, 'กลับ', { width: 90, onClick: () => this.leave() });

@@ -4,7 +4,7 @@ import { reachMenu } from './lib/common.mjs';
 //
 // Click coordinates are CSS pixels on the canvas. At the harness default viewport
 // (1280×720, dpr 1) the game is shown at k = 2 (see playtest/scale.mjs), so a game
-// position (x, y) is clicked at (2x, 2y). P1 pit 2 is at game (196, 164).
+// position (x, y) is clicked at (2x, 2y). P1 pit 2 is at game (196, 158).
 const GS = `scene('GameScene')`;
 
 export default [
@@ -22,10 +22,15 @@ export default [
     expect: { expression: `${GS}.displayedPits()`, equals: [7, 7, 7, 7, 7, 7, 7, 0, 7, 7, 7, 7, 7, 7, 7, 0] },
   },
 
+  {
+    name: 'one marble on the board for every seed',
+    action: 'expect',
+    expect: { expression: `${GS}.displayedSeeds()`, equals: [7, 7, 7, 7, 7, 7, 7, 0, 7, 7, 7, 7, 7, 7, 7, 0] },
+  },
   // Fixed start so the click lands on the current player's pit.
   { name: 'restart with P1 to move', action: 'scene', key: 'GameScene', data: { mode: 'short', firstPlayer: 0 } },
   { name: 'P1 to move', action: 'expect', expect: { expression: `${GS}.state.current`, equals: 0 } },
-  { name: 'click P1 pit 2 with the mouse', action: 'click', x: 392, y: 328 },
+  { name: 'click P1 pit 2 with the mouse', action: 'click', x: 392, y: 316 },
   {
     name: 'the move animates (sowing is in progress)',
     action: 'waitFor',
@@ -56,6 +61,11 @@ export default [
     name: 'the screen shows exactly the engine state',
     action: 'expect',
     expect: { expression: `JSON.stringify(${GS}.displayedPits()) === JSON.stringify(${GS}.state.pits)`, equals: true },
+  },
+  {
+    name: 'the marbles match the board after the move',
+    action: 'expect',
+    expect: { expression: `JSON.stringify(${GS}.displayedSeeds()) === JSON.stringify(${GS}.state.pits)`, equals: true },
   },
   { name: 'turn passes to P2', action: 'expect', expect: { expression: `${GS}.state.current`, equals: 1 } },
   { name: 'after-first-move', action: 'screenshot' },

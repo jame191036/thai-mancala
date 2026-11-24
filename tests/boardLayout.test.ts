@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BASE_HEIGHT, BASE_WIDTH } from '../src/display/integerScale';
-import { LAYOUT, handPosition, slotPosition } from '../src/display/boardLayout';
-import { opposite } from '../src/logic/board';
+import { LAYOUT, countPosition, handPosition, slotPosition } from '../src/display/boardLayout';
+import { isStore, opposite } from '../src/logic/board';
 
 const pits = [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14];
 
@@ -54,11 +54,23 @@ describe('board layout (GDD §7/§8)', () => {
     }
   });
 
-  it('the hand travels in the gap between the rows', () => {
+  it('the hand hovers between the rows, clearly nearer the pit it is dropping into', () => {
     for (const i of pits) {
       const y = handPosition(i).y;
-      expect(y).toBeGreaterThan(LAYOUT.topRowY + LAYOUT.pitRadius);
-      expect(y).toBeLessThan(LAYOUT.bottomRowY - LAYOUT.pitRadius);
+      expect(y).toBeGreaterThan(LAYOUT.topRowY);
+      expect(y).toBeLessThan(LAYOUT.bottomRowY);
+      const own = Math.abs(y - slotPosition(i).y);
+      const other = Math.abs(y - slotPosition(opposite(i)).y);
+      expect(other - own).toBeGreaterThanOrEqual(12);
+    }
+  });
+
+  it('seed counts are written outside the bowls, on their own player\'s side', () => {
+    for (let i = 0; i < 16; i++) {
+      const c = countPosition(i);
+      const r = isStore(i) ? LAYOUT.store.radius : LAYOUT.pitRadius;
+      const p1 = i <= 7;
+      expect(p1 ? c.y - slotPosition(i).y : slotPosition(i).y - c.y).toBeGreaterThan(r + 6);
     }
   });
 

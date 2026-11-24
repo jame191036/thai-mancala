@@ -12,7 +12,7 @@ export default [
   { name: 'restart with P1 first', action: 'scene', key: 'GameScene', data: { mode: 'short', firstPlayer: 0 } },
 
   // Illegal clicks do nothing.
-  { name: 'click a P2 pit (top row, pit 10) on P1 turn', action: 'click', x: 2 * 284, y: 2 * 106 },
+  { name: 'click a P2 pit (top row, pit 10) on P1 turn', action: 'click', x: 2 * 284, y: 2 * 112 },
   { name: 'click the P1 store', action: 'click', x: 2 * 424, y: 2 * 135 },
   { name: 'nothing moved', action: 'expect', expect: { expression: `${GS}.busy`, equals: false } },
   {
@@ -22,7 +22,7 @@ export default [
   },
 
   // Skip: tap anywhere during sowing → final state within ~100 ms (AC-UI4).
-  { name: 'click P1 pit 2', action: 'click', x: 392, y: 328 },
+  { name: 'click P1 pit 2', action: 'click', x: 392, y: 316 },
   { name: 'sowing started', action: 'waitFor', expression: `${GS}.busy === true`, timeout: 1000, poll: 20 },
   { name: 'let a few seeds drop', action: 'wait', ms: 200 },
   { name: 'still animating before the skip', action: 'expect', expect: { expression: `${GS}.busy`, equals: true } },
