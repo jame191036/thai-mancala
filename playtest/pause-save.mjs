@@ -8,9 +8,9 @@ const PAUSED = `game.scene.isActive('PauseScene') && game.scene.isPaused('GameSc
 export default [
   reachMenu,
   { name: 'no saved game yet', action: 'expect', expect: { expression: `scene('MainMenuScene').hasSave`, equals: false } },
-  // Settings chosen now must survive the reload below (AC-S2): "ช้า" (202, 220), "5 รอบ" (202, 194).
-  { name: 'pick speed ช้า', action: 'click', x: 2 * 202, y: 2 * 220 },
-  { name: 'pick 5 rounds', action: 'click', x: 2 * 202, y: 2 * 194 },
+  // Settings chosen now must survive the reload below (AC-S2): "ช้า" (202, 208), "5 รอบ" (202, 184).
+  { name: 'pick speed ช้า', action: 'click', x: 2 * 202, y: 2 * 208 },
+  { name: 'pick 5 rounds', action: 'click', x: 2 * 202, y: 2 * 184 },
   { name: 'key 2 = full game', action: 'press', key: '2' },
   { name: 'menu closed', action: 'waitFor', expression: `game.scene.isActive('GameScene') && !game.scene.isActive('MainMenuScene')`, timeout: 5000 },
   { name: 'instant sowing', action: 'eval', code: `${GS}.reducedMotion = true; window.__moves = 0;` },

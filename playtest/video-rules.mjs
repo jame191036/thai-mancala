@@ -3,13 +3,13 @@ import { reachMenu } from './lib/common.mjs';
 // into the game and into a rematch; while a round is running neither side is ever empty.
 //
 // Menu buttons (base px, see MENU_LAYOUT in src/scenes/MainMenuScene.ts): row "แบบตามวิดีโอ"
-// at y 164, short game x 168, full game x 312. Clicks are CSS px at k = 2 → ×2.
+// at y 154, short game x 168, full game x 312. Clicks are CSS px at k = 2 → ×2.
 const GS = `scene('GameScene')`;
 
 export default [
   reachMenu,
   { name: 'menu', action: 'screenshot' },
-  { name: 'click "แบบตามวิดีโอ · เกมสั้น"', action: 'click', x: 2 * 168, y: 2 * 164 },
+  { name: 'click "แบบตามวิดีโอ · เกมสั้น"', action: 'click', x: 2 * 168, y: 2 * 154 },
   {
     name: 'a short game with the video ruleset starts',
     action: 'waitFor',

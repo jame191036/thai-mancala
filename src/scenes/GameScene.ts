@@ -3,7 +3,8 @@ import { BOARD_SIZE, P1_STORE, isStore, otherPlayer, storeOf } from '../logic/bo
 import { createGame, isLegalMove, legalMoves, playMove, randomPlayer, startNextRound } from '../logic/rules';
 import type { GameState, PitIndex, Player, Step } from '../logic/types';
 import { LAYOUT, handPosition, slotPosition } from '../display/boardLayout';
-import { COLORS, CSS, FONT, PLAYER_COLOR, PLAYER_CSS } from '../display/palette';
+import { COLORS, CSS, PLAYER_COLOR, PLAYER_CSS } from '../display/palette';
+import { addPixelText, type PixelText } from '../display/pixelText';
 import {
   AI_PLAYER,
   RULESET_NAME,
@@ -40,7 +41,7 @@ const AI_THINK_MS: Record<AiLevel, number> = { easy: 750, medium: 650, hard: 350
 
 interface SlotView {
   shape: Phaser.GameObjects.Arc | Phaser.GameObjects.Rectangle;
-  label: Phaser.GameObjects.Text;
+  label: PixelText;
 }
 
 /**
@@ -89,14 +90,14 @@ export class GameScene extends Phaser.Scene {
   private shownDead: boolean[] = [];
   private hoverPit: PitIndex | null = null;
   private hand!: Phaser.GameObjects.Container;
-  private handLabel!: Phaser.GameObjects.Text;
-  private banner!: Phaser.GameObjects.Text;
-  private p1Label!: Phaser.GameObjects.Text;
-  private p2Label!: Phaser.GameObjects.Text;
-  private roundLabel!: Phaser.GameObjects.Text;
-  private messageLabel!: Phaser.GameObjects.Text;
-  private speedButton!: Phaser.GameObjects.Text;
-  private pauseButton!: Phaser.GameObjects.Text;
+  private handLabel!: PixelText;
+  private banner!: PixelText;
+  private p1Label!: PixelText;
+  private p2Label!: PixelText;
+  private roundLabel!: PixelText;
+  private messageLabel!: PixelText;
+  private speedButton!: PixelText;
+  private pauseButton!: PixelText;
   /** Set once the game is over, so the pause menu can no longer open. */
   private finished = false;
   private pending = new Set<() => void>();
@@ -309,10 +310,9 @@ export class GameScene extends Phaser.Scene {
         const shape = this.add
           .rectangle(x, y, LAYOUT.store.width, LAYOUT.store.height, COLORS.pitShadow)
           .setStrokeStyle(2, PLAYER_COLOR[owner]);
-        const tag = this.add
-          .text(x, y - LAYOUT.store.height / 2 + 10, owner === 0 ? 'P1' : 'P2', this.textStyle(10, PLAYER_CSS[owner]))
+        const tag = this.label(x, y - LAYOUT.store.height / 2 + 10, owner === 0 ? 'P1' : 'P2', 10, PLAYER_CSS[owner])
           .setOrigin(0.5);
-        const label = this.add.text(x, y, '0', this.textStyle(18, CSS.cream, true)).setOrigin(0.5);
+        const label = this.label(x, y, '0', 18, CSS.cream, true).setOrigin(0.5);
         if (this.facing && owner === 1) {
           tag.setRotation(Math.PI);
           label.setRotation(Math.PI);
@@ -322,7 +322,7 @@ export class GameScene extends Phaser.Scene {
       }
 
       const shape = this.add.circle(x, y, LAYOUT.pitRadius, COLORS.pitShadow).setStrokeStyle(1, COLORS.woodLight);
-      const label = this.add.text(x, y, '0', this.textStyle(12, CSS.cream, true)).setOrigin(0.5);
+      const label = this.label(x, y, '0', 12, CSS.cream, true).setOrigin(0.5);
       // "หันหน้าเข้าหากัน": the person across the table reads P2's numbers the right way up.
       if (this.facing && i > P1_STORE) label.setRotation(Math.PI);
       this.slots[i] = { shape, label };
@@ -343,21 +343,19 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createHud(): void {
-    this.p2Label = this.add.text(12, 14, '', this.textStyle(12, CSS.dim, true)).setOrigin(0, 0.5);
+    this.p2Label = this.label(12, 14, '', 12, CSS.dim, true).setOrigin(0, 0.5);
     // Upside down, the text must grow to the right of x from its other end.
     if (this.facing) this.p2Label.setOrigin(1, 0.5).setRotation(Math.PI);
-    this.roundLabel = this.add.text(240, 14, '', this.textStyle(10, CSS.dim)).setOrigin(0.5);
-    this.speedButton = this.add
-      .text(468, 14, '', this.textStyle(12, CSS.gold, true))
+    this.roundLabel = this.label(240, 14, '', 12, CSS.dim).setOrigin(0.5);
+    this.speedButton = this.label(468, 14, '', 12, CSS.gold, true)
       .setOrigin(1, 0.5)
       .setInteractive({ useHandCursor: true });
     this.speedButton.on('pointerdown', () => this.cycleSpeed());
 
-    this.banner = this.add.text(240, 45, '', this.textStyle(14, CSS.gold, true)).setOrigin(0.5).setAlpha(0);
-    this.p1Label = this.add.text(12, 236, '', this.textStyle(12, CSS.dim, true)).setOrigin(0, 0.5);
-    this.messageLabel = this.add.text(240, 256, '', this.textStyle(10, CSS.cream)).setOrigin(0.5);
-    this.pauseButton = this.add
-      .text(468, 236, '≡ พักเกม', this.textStyle(12, CSS.gold, true))
+    this.banner = this.label(240, 45, '', 14, CSS.gold, true).setOrigin(0.5).setAlpha(0);
+    this.p1Label = this.label(12, 236, '', 12, CSS.dim, true).setOrigin(0, 0.5);
+    this.messageLabel = this.label(240, 256, '', 12, CSS.cream).setOrigin(0.5);
+    this.pauseButton = this.label(468, 236, '≡ พักเกม', 12, CSS.gold, true)
       .setOrigin(1, 0.5)
       .setInteractive({ useHandCursor: true });
     this.pauseButton.on('pointerdown', () => this.openPause());
@@ -365,7 +363,7 @@ export class GameScene extends Phaser.Scene {
 
   private createHand(): void {
     const circle = this.add.circle(0, 0, 8, COLORS.gold).setStrokeStyle(1, COLORS.woodDark);
-    this.handLabel = this.add.text(0, 0, '', this.textStyle(10, CSS.pitShadow, true)).setOrigin(0.5);
+    this.handLabel = this.label(0, 0, '', 10, CSS.pitShadow, true).setOrigin(0.5);
     this.hand = this.add.container(0, 0, [circle, this.handLabel]).setDepth(10).setVisible(false);
   }
 
@@ -838,7 +836,7 @@ export class GameScene extends Phaser.Scene {
     const blob = this.add
       .container(a.x, a.y, [
         this.add.circle(0, 0, 10, COLORS.seedLight).setStrokeStyle(1, COLORS.gold),
-        this.add.text(0, 0, String(count), this.textStyle(10, CSS.cream, true)).setOrigin(0.5),
+        this.label(0, 0, String(count), 10, CSS.cream, true).setOrigin(0.5),
       ])
       .setDepth(11);
     await this.tweenAsync({ targets: blob, x: b.x, y: b.y, duration: ms, ease: 'Quad.InOut' });
@@ -869,7 +867,8 @@ export class GameScene extends Phaser.Scene {
     for (const done of [...this.pending]) done();
   }
 
-  private textStyle(size: number, color: string, bold = false): Phaser.Types.GameObjects.Text.TextStyle {
-    return { fontFamily: FONT, fontSize: `${size}px`, color, fontStyle: bold ? 'bold' : 'normal' };
+  /** Pixel text (GDD §10): Thai at 12 px or more; digits and "P1" may be smaller. */
+  private label(x: number, y: number, text: string, size: number, color: string, bold = false): PixelText {
+    return addPixelText(this, x, y, text, { size, color, bold });
   }
 }

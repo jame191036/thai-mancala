@@ -32,5 +32,8 @@ export const PLAYER_COLOR = [COLORS.p1, COLORS.p2] as const;
 export const PLAYER_CSS = [CSS.p1, CSS.p2] as const;
 export const PLAYER_NAME = ['ผู้เล่น 1', 'ผู้เล่น 2'] as const;
 
-/** Placeholder font until the Thai pixel-text prototype is done (GDD §10). */
-export const FONT = 'sans-serif';
+/**
+ * Font stack for all text (GDD §10): Chakra Petch (bundled, see fonts.ts); sans-serif only
+ * for the few symbols it lacks (arrows, ≡, ▶). Draw text with PixelText, not Phaser Text.
+ */
+export const FONT = '"Chakra Petch", sans-serif';

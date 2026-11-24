@@ -13,6 +13,7 @@ import {
   type Flag,
 } from '../settings';
 import { SceneKeys, type MainMenuData } from '../types/scenes';
+import type { PixelText } from '../display/pixelText';
 import { addButton, addText, createFocusFrame, frameAround, paintButton } from '../ui/widgets';
 
 export type SettingId = 'touch' | 'motion' | 'vibration' | 'facing';
@@ -26,11 +27,11 @@ interface SettingRow {
   /** Which option holds now (0 or 1). */
   get: () => 0 | 1;
   set: (option: 0 | 1) => void;
-  items: Phaser.GameObjects.Text[];
+  items: PixelText[];
 }
 
 /** Positions (base px), for playtests. Row i is at y = firstY + i * gapY; "กลับ" last. */
-export const SETTINGS_LAYOUT = { optionX: [282, 380], firstY: 58, gapY: 30, backY: 190 } as const;
+export const SETTINGS_LAYOUT = { optionX: [282, 384], firstY: 58, gapY: 30, backY: 186 } as const;
 
 /**
  * Settings (GDD §7) that exist so far. Sowing speed and round count stay on the main menu
@@ -42,9 +43,9 @@ export class SettingsScene extends Phaser.Scene {
   /** Focused row; rows.length = the "กลับ" button (read by playtests). */
   focus = 0;
   private rows: SettingRow[] = [];
-  private back!: Phaser.GameObjects.Text;
+  private back!: PixelText;
   private frame!: Phaser.GameObjects.Rectangle;
-  private help!: Phaser.GameObjects.Text;
+  private help!: PixelText;
 
   constructor() {
     super(SceneKeys.Settings);
@@ -88,12 +89,11 @@ export class SettingsScene extends Phaser.Scene {
     addText(this, width / 2, 24, 'ตั้งค่า', 18, CSS.gold);
     this.rows = defs.map((def, r) => {
       const y = SETTINGS_LAYOUT.firstY + r * SETTINGS_LAYOUT.gapY;
-      addText(this, SETTINGS_LAYOUT.optionX[0] - 56, y, def.label, 11, CSS.cream).setOrigin(1, 0.5);
+      addText(this, SETTINGS_LAYOUT.optionX[0] - 56, y, def.label, 12, CSS.cream).setOrigin(1, 0.5);
       const row: SettingRow = { ...def, items: [] };
       row.items = def.options.map((label, i) =>
         addButton(this, SETTINGS_LAYOUT.optionX[i], y, label, {
-          width: 90,
-          size: 10,
+          width: 96,
           onClick: () => {
             this.focus = r;
             this.pick(row, i as 0 | 1);
@@ -108,9 +108,9 @@ export class SettingsScene extends Phaser.Scene {
       onHover: () => this.setFocus(this.rows.length),
     });
 
-    addText(this, width / 2, 210, 'ความเร็วหว่านและจำนวนรอบอยู่ที่เมนูหลัก · ตั้งค่าเสียงมาพร้อมงานเสียง', 8, CSS.dim, false);
-    this.help = addText(this, width / 2, 230, '', 9, CSS.cream, false);
-    addText(this, width / 2, 254, '↑ ↓ เลือก · ← → / Enter เปลี่ยน · Esc / จอย B กลับ', 9, CSS.dim, false);
+    addText(this, width / 2, 212, 'ความเร็วหว่านและจำนวนรอบอยู่ที่เมนูหลัก · ตั้งค่าเสียงมาพร้อมงานเสียง', 12, CSS.dim, false);
+    this.help = addText(this, width / 2, 232, '', 12, CSS.cream, false);
+    addText(this, width / 2, 256, '↑ ↓ เลือก · ← → / Enter เปลี่ยน · Esc / จอย B กลับ', 12, CSS.dim, false);
     this.frame = createFocusFrame(this);
     this.refresh();
 

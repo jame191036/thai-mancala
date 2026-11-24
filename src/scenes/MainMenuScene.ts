@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { FULL_GAME_ROUND_OPTIONS } from '../logic/rules';
 import type { Ruleset } from '../logic/types';
-import { COLORS, CSS, FONT } from '../display/palette';
+import { COLORS, CSS } from '../display/palette';
+import { addPixelText, type PixelText, type PixelTextStyle } from '../display/pixelText';
 import { onKeyDown } from '../input/keys';
 import { onPadAction, type PadAction } from '../input/gamepad';
 import { loadSavedGame } from '../save';
@@ -29,21 +30,24 @@ import {
 
 /** Button centres (base px). Playtests click these, so keep them in sync with playtest/*.mjs. */
 export const MENU_LAYOUT = {
-  opponentY: 62,
+  opponentY: 58,
   opponentX: [150, 220, 290, 360],
   shortX: 168,
   fullX: 312,
-  rows: { traditional: 110, video: 164 },
-  roundsY: 194,
+  rows: { traditional: 104, video: 154 },
+  roundsY: 184,
   roundsX: [148, 202, 256],
-  speedY: 220,
+  speedY: 208,
   speedX: [148, 202, 256, 310, 364],
   /** ตั้งค่า / สถิติ / เครดิต (MENU_PAGES) */
-  pagesY: 243,
+  pagesY: 233,
   pagesX: [176, 240, 304],
 } as const;
 
 const OPPONENT_REGISTRY_KEY = 'opponent';
+
+/** Small option buttons (choice rows and the bottom row). */
+const CHOICE_STYLE: PixelTextStyle = { size: 12, color: CSS.cream, background: CSS.woodDark, padding: { x: 3, y: 2 } };
 
 type RowId = 'continue' | 'opponent' | 'traditional' | 'video' | 'rounds' | 'speed' | 'pages';
 
@@ -54,7 +58,7 @@ type RowId = 'continue' | 'opponent' | 'traditional' | 'video' | 'rounds' | 'spe
  */
 interface MenuRow {
   id: RowId;
-  items: Phaser.GameObjects.Text[];
+  items: PixelText[];
   /** choice rows: index of the item holding the current value */
   selected?: () => number;
   step?: (dir: 1 | -1) => void;
@@ -85,7 +89,7 @@ export class MainMenuScene extends Phaser.Scene {
   focusCol = 0;
 
   private rows: MenuRow[] = [];
-  private fullButtons: Phaser.GameObjects.Text[] = [];
+  private fullButtons: PixelText[] = [];
   private focusFrame!: Phaser.GameObjects.Rectangle;
 
   constructor() {
@@ -102,7 +106,7 @@ export class MainMenuScene extends Phaser.Scene {
     this.focusCol = 0;
     const { width } = this.scale;
 
-    this.text(width / 2, 26, 'หมากขุม', 30, CSS.gold);
+    this.text(width / 2, 22, 'หมากขุม', 30, CSS.gold);
 
     // ── Continue a saved game (only when one exists) ──
     const saved = loadSavedGame();
@@ -113,14 +117,13 @@ export class MainMenuScene extends Phaser.Scene {
     if (saved) {
       const s = saved.state;
       const info = s.mode === 'full' ? `รอบ ${s.round}/${s.maxRounds}` : 'เกมสั้น';
-      const b = this.add
-        .text(470, 26, `▶ เล่นต่อ (${info})`, {
-          fontFamily: FONT,
-          fontSize: '11px',
-          color: CSS.pitShadow,
-          backgroundColor: CSS.gold,
-          padding: { x: 6, y: 4 },
-        })
+      const b = addPixelText(this, 470, 22, `▶ เล่นต่อ (${info})`, {
+        size: 12,
+        color: CSS.pitShadow,
+        bold: true,
+        background: CSS.gold,
+        padding: { x: 6, y: 3 },
+      })
         .setOrigin(1, 0.5)
         .setInteractive({ useHandCursor: true })
         .once('pointerdown', resume);
@@ -141,7 +144,7 @@ export class MainMenuScene extends Phaser.Scene {
     };
     for (const ruleset of ['traditional', 'video'] as const) {
       const y = MENU_LAYOUT.rows[ruleset];
-      this.text(width / 2, y - 22, `${RULESET_NAME[ruleset]} · ${RULESET_SUMMARY[ruleset]}`, 11, CSS.gold);
+      this.text(width / 2, y - 25, `${RULESET_NAME[ruleset]} · ${RULESET_SUMMARY[ruleset]}`, 12, CSS.gold);
       const shortBtn = this.startButton(MENU_LAYOUT.shortX, y, 'เกมสั้น · 1 รอบ', () => start(ruleset, 'short'));
       const fullBtn = this.startButton(MENU_LAYOUT.fullX, y, '', () => start(ruleset, 'full'));
       this.fullButtons.push(fullBtn);
@@ -155,17 +158,7 @@ export class MainMenuScene extends Phaser.Scene {
     // ── Other screens ──
     const openPage = (i: number) => this.scene.start(MENU_PAGES[i].key);
     const pageButtons = MENU_PAGES.map((page, i) =>
-      this.add
-        .text(MENU_LAYOUT.pagesX[i], MENU_LAYOUT.pagesY, page.label, {
-          fontFamily: FONT,
-          fontSize: '10px',
-          color: CSS.cream,
-          backgroundColor: CSS.woodDark,
-          padding: { x: 3, y: 3 },
-          fixedWidth: 56,
-          align: 'center',
-        })
-        .setOrigin(0.5)
+      addPixelText(this, MENU_LAYOUT.pagesX[i], MENU_LAYOUT.pagesY, page.label, { ...CHOICE_STYLE, fixedWidth: 56 })
         .setInteractive({ useHandCursor: true })
         .once('pointerdown', () => openPage(i)),
     );
@@ -178,7 +171,7 @@ export class MainMenuScene extends Phaser.Scene {
     this.focusFrame = this.add.rectangle(0, 0, 10, 10).setStrokeStyle(2, COLORS.cream).setDepth(5);
     this.refreshAll();
 
-    this.text(width / 2, 262, `↑ ↓ ← → เลือก · Enter / จอย A เริ่ม · ปุ่มลัด 1–4${this.hasSave ? ' · C เล่นต่อ' : ''} · AI เล่นแถวบน`, 8, CSS.dim, false);
+    this.text(width / 2, 258, `↑ ↓ ← → เลือก · Enter / จอย A เริ่ม · ปุ่มลัด 1–4${this.hasSave ? ' · C เล่นต่อ' : ''} · AI เล่นแถวบน`, 12, CSS.dim, false);
 
     // ── Keyboard & gamepad ──
     onKeyDown(this, 'UP', () => this.nav('up'));
@@ -249,7 +242,7 @@ export class MainMenuScene extends Phaser.Scene {
     for (const row of this.rows) {
       if (!row.selected) continue;
       const sel = row.selected();
-      row.items.forEach((b, i) => b.setColor(i === sel ? CSS.pitShadow : CSS.cream).setBackgroundColor(i === sel ? CSS.gold : CSS.woodDark));
+      row.items.forEach((b, i) => b.restyle({ color: i === sel ? CSS.pitShadow : CSS.cream, background: i === sel ? CSS.gold : CSS.woodDark }));
     }
     for (const b of this.fullButtons) b.setText(`เกมเต็ม · ${this.rounds} รอบ`);
 
@@ -258,7 +251,7 @@ export class MainMenuScene extends Phaser.Scene {
     const item = row ? row.items[row.selected ? row.selected() : this.focusCol] : undefined;
     if (item && this.focusFrame) {
       const b = item.getBounds();
-      this.focusFrame.setPosition(b.centerX, b.centerY).setSize(b.width + 6, b.height + 6);
+      this.focusFrame.setPosition(b.centerX, b.centerY).setSize(b.width + 4, b.height + 4);
       this.focusFrame.setVisible(true);
     }
   }
@@ -275,18 +268,9 @@ export class MainMenuScene extends Phaser.Scene {
     onPick: (v: T) => void,
   ): void {
     // Right-aligned just left of the first button, so long labels never overlap it.
-    this.text(xs[0] - buttonWidth / 2 - 6, y, label, 11, CSS.dim).setOrigin(1, 0.5);
+    this.text(xs[0] - buttonWidth / 2 - 6, y, label, 12, CSS.dim).setOrigin(1, 0.5);
     const items = values.map((v, i) => {
-      const b = this.add
-        .text(xs[i], y, labelOf(v), {
-          fontFamily: FONT,
-          fontSize: '10px',
-          padding: { x: 3, y: 3 },
-          fixedWidth: buttonWidth,
-          align: 'center',
-        })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true });
+      const b = addPixelText(this, xs[i], y, labelOf(v), { ...CHOICE_STYLE, fixedWidth: buttonWidth }).setInteractive({ useHandCursor: true });
       // A mouse pick does not move the keyboard/gamepad focus (Space still starts the
       // focused game afterwards).
       b.on('pointerdown', () => onPick(v));
@@ -299,25 +283,20 @@ export class MainMenuScene extends Phaser.Scene {
     this.rows.push({ id, items, selected: () => values.indexOf(current()), step });
   }
 
-  private startButton(x: number, y: number, label: string, onClick: () => void): Phaser.GameObjects.Text {
-    return this.add
-      .text(x, y, label, {
-        fontFamily: FONT,
-        fontSize: '13px',
-        color: CSS.cream,
-        backgroundColor: CSS.woodDark,
-        padding: { x: 8, y: 5 },
-        fixedWidth: 128,
-        align: 'center',
-      })
-      .setOrigin(0.5)
+  private startButton(x: number, y: number, label: string, onClick: () => void): PixelText {
+    return addPixelText(this, x, y, label, {
+      size: 13,
+      color: CSS.cream,
+      bold: true,
+      background: CSS.woodDark,
+      padding: { x: 8, y: 4 },
+      fixedWidth: 128,
+    })
       .setInteractive({ useHandCursor: true })
       .once('pointerdown', onClick);
   }
 
-  private text(x: number, y: number, s: string, size: number, color: string, bold = true): Phaser.GameObjects.Text {
-    return this.add
-      .text(x, y, s, { fontFamily: FONT, fontSize: `${size}px`, color, fontStyle: bold ? 'bold' : 'normal' })
-      .setOrigin(0.5);
+  private text(x: number, y: number, s: string, size: number, color: string, bold = true): PixelText {
+    return addPixelText(this, x, y, s, { size, color, bold });
   }
 }

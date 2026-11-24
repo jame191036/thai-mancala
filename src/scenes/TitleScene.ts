@@ -28,7 +28,7 @@ export class TitleScene extends Phaser.Scene {
     const still = loadFlag(this.registry, REDUCED_MOTION);
 
     addText(this, width / 2, 78, 'หมากขุม', 44, CSS.gold);
-    addText(this, width / 2, 116, 'การละเล่นพื้นบ้านไทย · 2 คน หรือเล่นกับ AI', 11, CSS.cream, false);
+    addText(this, width / 2, 116, 'การละเล่นพื้นบ้านไทย · 2 คน หรือเล่นกับ AI', 12, CSS.cream, false);
 
     for (const x of PIT_XS) this.add.circle(x, ROW_Y, 9, COLORS.pitShadow).setStrokeStyle(1, COLORS.woodLight);
     this.add.rectangle(STORE_X, ROW_Y, 22, 30, COLORS.pitShadow).setStrokeStyle(2, COLORS.p1);

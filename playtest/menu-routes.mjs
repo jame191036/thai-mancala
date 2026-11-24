@@ -1,8 +1,8 @@
 // Every menu route of GDD §7 that exists so far (Title → Main Menu → Settings / Stats /
 // Credits → back), settings that survive a reload and reach the game, and statistics
 // counting a finished game. Clicks are base px × 2 (k = 2).
-//   Main menu bottom row: ตั้งค่า (176, 243) · สถิติ (240, 243) · เครดิต (304, 243)
-//   Settings: rows at y 58 / 88 / 118 / 148, options at x 282 / 380, "กลับ" at (240, 190)
+//   Main menu bottom row: ตั้งค่า (176, 233) · สถิติ (240, 233) · เครดิต (304, 233)
+//   Settings: rows at y 58 / 88 / 118 / 148, options at x 282 / 384, "กลับ" at (240, 186)
 import { TO_MENU } from './lib/common.mjs';
 
 const MM = `scene('MainMenuScene')`;
@@ -45,7 +45,7 @@ export default [
   { name: 'Enter toggles reduced motion on', action: 'press', key: 'Enter' },
   ...keys('ArrowDown', 1),
   { name: '→ : vibration off', action: 'press', key: 'ArrowRight' },
-  { name: 'click "เปิด" on the facing row', action: 'click', x: 2 * 380, y: 2 * 148 },
+  { name: 'click "เปิด" on the facing row', action: 'click', x: 2 * 384, y: 2 * 148 },
   { name: 'all four changed', action: 'expect', expect: { expression: `${SET}.values()`, equals: CHOSEN } },
   { name: 'the click moved the focus to its row', action: 'expect', expect: { expression: `${SET}.focus`, equals: 3 } },
   { name: 'settings-changed', action: 'screenshot' },
@@ -68,18 +68,18 @@ export default [
   { name: 'credits', action: 'screenshot' },
   { name: 'Esc = back ', action: 'press', key: 'Escape' },
   { name: 'menu, focus on "เครดิต"', action: 'waitFor', expression: `game.scene.isActive('MainMenuScene') && ${MM}.focusCol === 2`, timeout: 3000 },
-  { name: 'click "สถิติ"', action: 'click', x: 2 * 240, y: 2 * 243 },
+  { name: 'click "สถิติ"', action: 'click', x: 2 * 240, y: 2 * 233 },
   { name: 'stats by mouse', action: 'waitFor', expression: `game.scene.isActive('StatsScene')`, timeout: 3000 },
-  { name: 'click "กลับ" on stats', action: 'click', x: 2 * 200, y: 2 * 220 },
+  { name: 'click "กลับ" on stats', action: 'click', x: 2 * 196, y: 2 * 236 },
   { name: 'menu again', action: 'waitFor', expression: `game.scene.isActive('MainMenuScene')`, timeout: 3000 },
-  { name: 'click "ตั้งค่า"', action: 'click', x: 2 * 176, y: 2 * 243 },
+  { name: 'click "ตั้งค่า"', action: 'click', x: 2 * 176, y: 2 * 233 },
   { name: 'settings by mouse', action: 'waitFor', expression: `game.scene.isActive('SettingsScene')`, timeout: 3000 },
   { name: 'settings were kept', action: 'expect', expect: { expression: `${SET}.values()`, equals: CHOSEN } },
-  { name: 'click "กลับ" on settings', action: 'click', x: 2 * 240, y: 2 * 190 },
+  { name: 'click "กลับ" on settings', action: 'click', x: 2 * 240, y: 2 * 186 },
   { name: 'menu once more', action: 'waitFor', expression: `game.scene.isActive('MainMenuScene')`, timeout: 3000 },
-  { name: 'click "เครดิต"', action: 'click', x: 2 * 304, y: 2 * 243 },
+  { name: 'click "เครดิต"', action: 'click', x: 2 * 304, y: 2 * 233 },
   { name: 'credits by mouse', action: 'waitFor', expression: `game.scene.isActive('CreditsScene')`, timeout: 3000 },
-  { name: 'click "กลับ" on credits', action: 'click', x: 2 * 240, y: 2 * 214 },
+  { name: 'click "กลับ" on credits', action: 'click', x: 2 * 240, y: 2 * 222 },
   { name: 'back on the menu', action: 'waitFor', expression: `game.scene.isActive('MainMenuScene')`, timeout: 3000 },
 
   // ── Settings survive a reload (AC-S2). After a reload only keys and expressions work. ──

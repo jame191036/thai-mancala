@@ -4,6 +4,17 @@ import { reachMenu } from './lib/common.mjs';
 export default [
   reachMenu,
   {
+    // GDD §10: all text is drawn with the bundled font. On the production build this also
+    // proves the Content-Security-Policy lets the font load.
+    name: 'the bundled Chakra Petch font is loaded (Thai and Latin)',
+    action: 'expect',
+    expect: {
+      expression: `['400', '700'].every((w) => document.fonts.check(w + ' 12px "Chakra Petch"', 'หมากขุม AI 12'))
+        && [...document.fonts].filter((f) => f.family.replace(/"/g, '') === 'Chakra Petch' && f.status === 'loaded').length`,
+      equals: 4,
+    },
+  },
+  {
     name: 'canvas backing store is the 480×270 base resolution',
     action: 'expect',
     expect: { expression: `[game.canvas.width, game.canvas.height]`, equals: [480, 270] },

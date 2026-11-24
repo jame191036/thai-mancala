@@ -13,7 +13,7 @@ const pit = (i) => [108 + 44 * i, 164];
 export default [
   reachMenu,
   { name: 'k = 4 on a landscape phone (AC-UI1 case 844×390 @ dpr 3)', action: 'expect', expect: { expression: `game.scale.zoom * devicePixelRatio`, equals: 4 } },
-  tap('tap "แบบดั้งเดิม · เกมสั้น"', 168, 110),
+  tap('tap "แบบดั้งเดิม · เกมสั้น"', 168, 104),
   { name: 'game started by touch', action: 'waitFor', expression: `game.scene.isActive('GameScene') && !game.scene.isActive('MainMenuScene')`, timeout: 5000 },
   { name: 'P1 first', action: 'scene', key: 'GameScene', data: { mode: 'short', firstPlayer: 0 } },
   { name: 'game ready', action: 'waitFor', expression: `${GS}.state && ${GS}.state.current === 0 && !${GS}.busy`, timeout: 3000 },

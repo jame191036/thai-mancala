@@ -6,11 +6,12 @@ import { SceneKeys, type MainMenuData } from '../types/scenes';
 import { addButton, addText, createFocusFrame, frameAround, paintButton } from '../ui/widgets';
 
 /** "กลับ" button centre (base px), for playtests. */
-export const CREDITS_LAYOUT = { backY: 214 } as const;
+export const CREDITS_LAYOUT = { backY: 222 } as const;
 
 /**
- * Credits (GDD §7): tools and the rule sources of GDD Appendix B. No developer name (owner's
- * choice, 2026-11-24). Art and sound credits are added with the art and audio passes.
+ * Credits (GDD §7): tools, the font (its OFL licence asks for it) and the rule sources of
+ * GDD Appendix B. No developer name (owner's choice, 2026-11-24). Art and sound credits are
+ * added with the art and audio passes.
  */
 export class CreditsScene extends Phaser.Scene {
   constructor() {
@@ -19,24 +20,25 @@ export class CreditsScene extends Phaser.Scene {
 
   create(): void {
     const { width } = this.scale;
-    const line = (y: number, s: string, size: number, color: string, bold = false) => addText(this, width / 2, y, s, size, color, bold);
+    const line = (y: number, s: string, color: string = CSS.cream, size = 12, bold = false) => addText(this, width / 2, y, s, size, color, bold);
 
-    line(22, 'เครดิต', 18, CSS.gold, true);
-    line(50, 'หมากขุม: การละเล่นพื้นบ้านไทย', 12, CSS.cream, true);
-    line(68, 'สร้างด้วย Phaser 4 · TypeScript · Vite', 10, CSS.cream);
+    line(18, 'เครดิต', CSS.gold, 18, true);
+    line(42, 'หมากขุม: การละเล่นพื้นบ้านไทย', CSS.cream, 14, true);
+    line(61, 'สร้างด้วย Phaser 4 · TypeScript · Vite');
+    line(77, 'ฟอนต์ Chakra Petch (Cadson Demak) · SIL Open Font License 1.1');
 
-    line(94, 'แหล่งอ้างอิงกติกา', 11, CSS.gold, true);
-    line(112, 'บันทึกหมากขุมไทย ค.ศ. 1836 · Ludii Portal (ludii.games)', 9, CSS.cream);
-    line(126, 'THAILEX: mahk khum (หมากขุม) · thailex.info', 9, CSS.cream);
-    line(140, 'แบบตามวิดีโอ: youtube.com/watch?v=ZwP1hlU_m_c', 9, CSS.cream);
+    line(101, 'แหล่งอ้างอิงกติกา', CSS.gold, 12, true);
+    line(118, 'บันทึกหมากขุมไทย ค.ศ. 1836 · Ludii Portal (ludii.games)');
+    line(134, 'THAILEX: mahk khum (หมากขุม) · thailex.info');
+    line(150, 'แบบตามวิดีโอ: youtube.com/watch?v=ZwP1hlU_m_c');
 
-    line(166, 'งานภาพ: กราฟิกชั่วคราว · เสียง: ยังไม่มี', 9, CSS.dim);
-    line(180, 'ไม่ได้ลอกลายหรือภาพจากงานที่มีลิขสิทธิ์', 8, CSS.dim);
+    line(174, 'งานภาพ: กราฟิกชั่วคราว · เสียง: ยังไม่มี', CSS.dim);
+    line(190, 'ไม่ได้ลอกลายหรือภาพจากงานที่มีลิขสิทธิ์', CSS.dim);
 
     const back = addButton(this, width / 2, CREDITS_LAYOUT.backY, 'กลับ', { width: 90, onClick: () => this.leave() });
     paintButton(back, true);
     frameAround(createFocusFrame(this), back);
-    line(254, 'Enter / Esc / จอย A หรือ B กลับ', 9, CSS.dim);
+    line(256, 'Enter / Esc / จอย A หรือ B กลับ', CSS.dim);
 
     onKeyDown(this, 'ENTER', () => this.leave());
     onKeyDown(this, 'SPACE', () => this.leave());

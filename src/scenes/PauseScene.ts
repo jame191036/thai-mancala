@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { COLORS, CSS, FONT } from '../display/palette';
+import { COLORS, CSS } from '../display/palette';
+import { addPixelText, type PixelText } from '../display/pixelText';
 import { onKeyDown } from '../input/keys';
 import { onPadAction, onPadDisconnected } from '../input/gamepad';
 import { SceneKeys, type PauseSceneData } from '../types/scenes';
@@ -27,8 +28,8 @@ export class PauseScene extends Phaser.Scene {
   focus = 0;
   /** Showing the "gamepad unplugged" notice (read by playtests). */
   padLost = false;
-  private buttons: Phaser.GameObjects.Text[] = [];
-  private notice!: Phaser.GameObjects.Text;
+  private buttons: PixelText[] = [];
+  private notice!: PixelText;
 
   constructor() {
     super(SceneKeys.Pause);
@@ -41,36 +42,28 @@ export class PauseScene extends Phaser.Scene {
     this.add
       .rectangle(width / 2, 130, 220, 170, COLORS.woodDark)
       .setStrokeStyle(2, COLORS.gold);
-    this.add
-      .text(width / 2, 70, 'พักเกม', { fontFamily: FONT, fontSize: '18px', color: CSS.gold, fontStyle: 'bold' })
-      .setOrigin(0.5);
+    addPixelText(this, width / 2, 70, 'พักเกม', { size: 18, color: CSS.gold, bold: true });
 
     this.buttons = OPTIONS.map((opt, i) => {
-      const b = this.add
-        .text(PAUSE_LAYOUT.x, PAUSE_LAYOUT.firstY + i * PAUSE_LAYOUT.gapY, opt.label, {
-          fontFamily: FONT,
-          fontSize: '13px',
-          padding: { x: 8, y: 4 },
-          fixedWidth: 180,
-          align: 'center',
-        })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true });
+      const b = addPixelText(this, PAUSE_LAYOUT.x, PAUSE_LAYOUT.firstY + i * PAUSE_LAYOUT.gapY, opt.label, {
+        size: 13,
+        color: CSS.cream,
+        background: CSS.pitShadow,
+        padding: { x: 8, y: 3 },
+        fixedWidth: 180,
+      }).setInteractive({ useHandCursor: true });
       b.on('pointerover', () => this.setFocus(i));
       b.on('pointerdown', () => this.choose(opt.action));
       return b;
     });
     this.refresh();
 
-    this.notice = this.add
-      .text(width / 2, 232, 'จอยหลุด: เชื่อมต่อจอยใหม่ หรือเล่นต่อด้วยเมาส์ / คีย์บอร์ด / การแตะ', {
-        fontFamily: FONT,
-        fontSize: '10px',
-        color: CSS.cream,
-        backgroundColor: CSS.pitShadow,
-        padding: { x: 6, y: 3 },
-      })
-      .setOrigin(0.5);
+    this.notice = addPixelText(this, width / 2, 232, 'จอยหลุด: เชื่อมต่อจอยใหม่ หรือเล่นต่อด้วยเมาส์ / คีย์บอร์ด / การแตะ', {
+      size: 12,
+      color: CSS.cream,
+      background: CSS.pitShadow,
+      padding: { x: 6, y: 3 },
+    });
     this.showPadLost(data.padLost === true);
     onPadDisconnected(this, () => this.showPadLost(true));
 
@@ -119,7 +112,7 @@ export class PauseScene extends Phaser.Scene {
   private refresh(): void {
     this.buttons.forEach((b, i) => {
       const on = i === this.focus;
-      b.setColor(on ? CSS.pitShadow : CSS.cream).setBackgroundColor(on ? CSS.gold : CSS.pitShadow);
+      b.restyle({ color: on ? CSS.pitShadow : CSS.cream, background: on ? CSS.gold : CSS.pitShadow });
     });
   }
 }
