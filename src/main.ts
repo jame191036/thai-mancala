@@ -6,6 +6,10 @@ import { MainMenuScene } from './scenes/MainMenuScene';
 import { GameScene } from './scenes/GameScene';
 import { GameOverScene } from './scenes/GameOverScene';
 import { PauseScene } from './scenes/PauseScene';
+import { TitleScene } from './scenes/TitleScene';
+import { SettingsScene } from './scenes/SettingsScene';
+import { StatsScene } from './scenes/StatsScene';
+import { CreditsScene } from './scenes/CreditsScene';
 import { BASE_HEIGHT, BASE_WIDTH, computeIntegerScale } from './display/integerScale';
 
 const CONTAINER_ID = 'game-container';
@@ -35,7 +39,18 @@ const config: Phaser.Types.Core.GameConfig = {
     autoCenter: Phaser.Scale.NO_CENTER,
     zoom: currentZoom(),
   },
-  scene: [BootScene, PreloaderScene, MainMenuScene, GameScene, GameOverScene, PauseScene],
+  scene: [
+    BootScene,
+    PreloaderScene,
+    TitleScene,
+    MainMenuScene,
+    SettingsScene,
+    StatsScene,
+    CreditsScene,
+    GameScene,
+    GameOverScene,
+    PauseScene,
+  ],
 };
 
 const game = new Phaser.Game(config);

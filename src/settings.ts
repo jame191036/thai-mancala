@@ -89,3 +89,53 @@ export function loadFullGameRounds(registry: Phaser.Data.DataManager): FullGameR
 export function saveFullGameRounds(registry: Phaser.Data.DataManager, rounds: FullGameRounds): void {
   save(registry, 'fullGameRounds', rounds);
 }
+
+// ── Settings screen (GDD §7): comfort and accessibility ─────────────────────
+
+/** Touch screens: tap a pit twice to sow (default, GDD §3.8) or once. */
+export type TouchConfirm = 'double' | 'single';
+
+export function parseTouchConfirm(raw: unknown): TouchConfirm {
+  return raw === 'single' ? 'single' : 'double';
+}
+
+export function loadTouchConfirm(registry: Phaser.Data.DataManager): TouchConfirm {
+  return load(registry, 'touchConfirm', parseTouchConfirm);
+}
+
+export function saveTouchConfirm(registry: Phaser.Data.DataManager, value: TouchConfirm): void {
+  save(registry, 'touchConfirm', value);
+}
+
+/** On/off settings. `fallback` is used when nothing valid is stored. */
+export interface Flag {
+  key: string;
+  fallback: () => boolean;
+}
+
+/** Finish every animation at once, no shaking. Defaults to the system "reduce motion". */
+export const REDUCED_MOTION: Flag = { key: 'reducedMotion', fallback: prefersReducedMotion };
+/** Rumble the gamepad (and buzz an Android phone) on a capture (GDD §3.8.1, §7). */
+export const VIBRATION: Flag = { key: 'vibration', fallback: () => true };
+/** Two people facing each other across the device: P2's names and numbers upside down. */
+export const FACING: Flag = { key: 'facing', fallback: () => false };
+
+export function parseFlag(raw: unknown, fallback: boolean): boolean {
+  return typeof raw === 'boolean' ? raw : fallback;
+}
+
+export function loadFlag(registry: Phaser.Data.DataManager, flag: Flag): boolean {
+  return load(registry, flag.key, (raw) => parseFlag(raw, flag.fallback()));
+}
+
+export function saveFlag(registry: Phaser.Data.DataManager, flag: Flag, value: boolean): void {
+  save(registry, flag.key, value);
+}
+
+function prefersReducedMotion(): boolean {
+  try {
+    return globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  } catch {
+    return false;
+  }
+}

@@ -2,6 +2,7 @@ import type { GameEndReason, GameMode, Player, Ruleset } from '../logic/types';
 import type { AiLevel } from '../ai/ai';
 import { PLAYER_NAME } from '../display/palette';
 import type { SavedGame } from '../save';
+import type { GameRecords } from '../stats';
 
 /** Who plays P2 (top row): another person on the same device, or the AI. P1 is always a person. */
 export type Opponent = 'human' | AiLevel;
@@ -25,11 +26,28 @@ export function playerNames(opponent: Opponent): readonly [string, string] {
 export const SceneKeys = {
   Boot: 'BootScene',
   Preloader: 'PreloaderScene',
+  Title: 'TitleScene',
   MainMenu: 'MainMenuScene',
+  Settings: 'SettingsScene',
+  Stats: 'StatsScene',
+  Credits: 'CreditsScene',
   Game: 'GameScene',
   GameOver: 'GameOverScene',
   Pause: 'PauseScene',
 } as const;
+
+/** Menu screens reached from the main menu's bottom row (in this order). */
+export const MENU_PAGES = [
+  { key: SceneKeys.Settings, label: 'ตั้งค่า' },
+  { key: SceneKeys.Stats, label: 'สถิติ' },
+  { key: SceneKeys.Credits, label: 'เครดิต' },
+] as const;
+
+/** Data for `scene.start(SceneKeys.MainMenu, data)`: where the keyboard / gamepad focus goes. */
+export interface MainMenuData {
+  /** Coming back from one of MENU_PAGES: focus its button again. */
+  fromPage?: number;
+}
 
 /** Data for `scene.start(SceneKeys.Game, data)`. All optional: defaults to a short game. */
 export interface GameSceneData {
@@ -78,4 +96,6 @@ export interface GameOverData {
   stores: readonly [number, number];
   /** Why the game ended; 'resigned' = the loser gave up from the pause menu. */
   reason: GameEndReason | 'resigned';
+  /** Biggest capture and longest relay chain of this game. */
+  records: GameRecords;
 }

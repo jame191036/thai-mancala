@@ -5,6 +5,7 @@
  */
 import { parseGameState } from './logic/serialize';
 import type { GameState } from './logic/types';
+import { emptyGameRecords, parseGameRecords, type GameRecords } from './stats';
 import { OPPONENTS, type Opponent } from './types/scenes';
 
 const STORAGE_KEY = 'thai-mancala:save';
@@ -13,13 +14,21 @@ const SAVE_VERSION = 1;
 export interface SavedGame {
   state: GameState;
   opponent: Opponent;
+  /** This game's records so far (result screen). Older saves have none: they start empty. */
+  records?: GameRecords;
 }
 
 export function saveGame(game: SavedGame): void {
   try {
     globalThis.localStorage?.setItem(
       STORAGE_KEY,
-      JSON.stringify({ version: SAVE_VERSION, savedAt: Date.now(), state: game.state, opponent: game.opponent }),
+      JSON.stringify({
+        version: SAVE_VERSION,
+        savedAt: Date.now(),
+        state: game.state,
+        opponent: game.opponent,
+        records: game.records ?? emptyGameRecords(),
+      }),
     );
   } catch {
     /* storage unavailable: the game just will not survive a reload */
@@ -43,7 +52,7 @@ export function parseSavedGame(raw: unknown): SavedGame | null {
   if (r.version !== SAVE_VERSION) return null;
   if (!(OPPONENTS as readonly unknown[]).includes(r.opponent)) return null;
   const state = parseGameState(r.state);
-  return state ? { state, opponent: r.opponent as Opponent } : null;
+  return state ? { state, opponent: r.opponent as Opponent, records: parseGameRecords(r.records) } : null;
 }
 
 export function clearSavedGame(): void {

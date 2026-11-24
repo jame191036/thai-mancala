@@ -17,9 +17,21 @@ import {
 import { AiClient } from '../ai/AiClient';
 import type { AiLevel } from '../ai/ai';
 import { onKeyDown } from '../input/keys';
-import { connectedPadCount, onPadAction, onPadDisconnected, type PadAction } from '../input/gamepad';
-import { SOW_SPEED_LABEL, loadSowSpeed, nextSowSpeed, saveSowSpeed, type SowSpeed } from '../settings';
+import { connectedPadCount, onPadAction, onPadDisconnected, rumble, type PadAction } from '../input/gamepad';
+import {
+  FACING,
+  REDUCED_MOTION,
+  SOW_SPEED_LABEL,
+  VIBRATION,
+  loadFlag,
+  loadSowSpeed,
+  loadTouchConfirm,
+  nextSowSpeed,
+  saveSowSpeed,
+  type SowSpeed,
+} from '../settings';
 import { clearSavedGame, saveGame } from '../save';
+import { addMoveToRecords, emptyGameRecords, saveFinishedGame, type GameRecords } from '../stats';
 
 /** One seed drop at ×1 speed (GDD §3.7). */
 const BASE_DROP_MS = 120;
@@ -61,6 +73,15 @@ export class GameScene extends Phaser.Scene {
   aiThinking = false;
   /** Moves the AI has made this game. */
   aiMoves = 0;
+  /** Biggest capture / longest relay chain so far this game (result screen, stats). */
+  records: GameRecords = emptyGameRecords();
+  /** Settings: rumble on captures; P2's names and numbers upside down (2 players). */
+  vibration = true;
+  facing = false;
+  /** Captures that asked for a rumble (read by playtests). */
+  buzzCount = 0;
+  /** Scene-clock time each seed of the current move landed (AC-UI3 timing). */
+  dropTimes: number[] = [];
 
   private slots: SlotView[] = [];
   /** What the screen currently shows (follows the steps during an animation). */
@@ -86,6 +107,10 @@ export class GameScene extends Phaser.Scene {
   private ai: AiClient | null = null;
   /** Bumped on every new game/shutdown so a late AI answer is ignored. */
   private aiToken = 0;
+  /** When the next seed is due (keeps a steady rhythm, see beat()). */
+  private nextBeatAt: number | null = null;
+  /** The last person to touch the board used a touch screen (phone buzz on captures). */
+  private lastInputTouch = false;
 
   constructor() {
     super(SceneKeys.Game);
@@ -103,9 +128,17 @@ export class GameScene extends Phaser.Scene {
     this.skipRequested = false;
     this.moveStartTime = -1;
     this.speed = loadSowSpeed(this.registry);
-    this.reducedMotion = this.registry.get('reducedMotion') === true;
+    this.reducedMotion = loadFlag(this.registry, REDUCED_MOTION);
+    this.touchConfirm = loadTouchConfirm(this.registry) === 'double';
+    this.vibration = loadFlag(this.registry, VIBRATION);
+    this.buzzCount = 0;
+    this.dropTimes = [];
+    this.nextBeatAt = null;
+    this.lastInputTouch = false;
     this.finished = false;
     this.opponent = data.resume?.opponent ?? data.opponent ?? 'human';
+    this.facing = this.opponent === 'human' && loadFlag(this.registry, FACING);
+    this.records = data.resume?.records ?? emptyGameRecords();
     this.names = playerNames(this.opponent);
     this.aiThinking = false;
     this.aiMoves = 0;
@@ -171,6 +204,16 @@ export class GameScene extends Phaser.Scene {
     return this.slots.map((s) => (s.label.text === '×' ? 0 : Number(s.label.text)));
   }
 
+  /** Which slots are drawn as dead pits right now (compare with `state.dead`). */
+  displayedDead(): boolean[] {
+    return this.slots.map((s) => s.label.text === '×');
+  }
+
+  /** P2's name label is drawn upside down ("หันหน้าเข้าหากัน"). */
+  get p2UpsideDown(): boolean {
+    return this.p2Label.rotation !== 0;
+  }
+
   /** Jump to the end of the current move's animation (tap anywhere / Space). */
   requestSkip(): void {
     if (!this.busy) return;
@@ -215,9 +258,11 @@ export class GameScene extends Phaser.Scene {
       winner: otherPlayer(loser),
       stores: [s.pits[7], s.pits[15]],
       reason: 'resigned',
+      records: this.records,
     };
     this.finished = true;
     clearSavedGame();
+    this.countGame(data);
     this.scene.stop(SceneKeys.Pause);
     this.scene.start(SceneKeys.GameOver, data);
   }
@@ -230,8 +275,20 @@ export class GameScene extends Phaser.Scene {
 
   /** Keep the game in progress in localStorage; a finished game leaves no save. */
   private saveProgress(state: GameState): void {
-    if (state.phase === 'playing') saveGame({ state, opponent: this.opponent });
+    if (state.phase === 'playing') saveGame({ state, opponent: this.opponent, records: this.records });
     else clearSavedGame();
+  }
+
+  /** Add a finished game to the statistics (Stats screen). */
+  private countGame(data: GameOverData): void {
+    saveFinishedGame({
+      opponent: data.opponent,
+      mode: data.mode,
+      winner: data.winner,
+      stores: data.stores,
+      records: data.records,
+      resigned: data.reason === 'resigned',
+    });
   }
 
   // ── Building the screen ────────────────────────────────────────────────────
@@ -252,16 +309,22 @@ export class GameScene extends Phaser.Scene {
         const shape = this.add
           .rectangle(x, y, LAYOUT.store.width, LAYOUT.store.height, COLORS.pitShadow)
           .setStrokeStyle(2, PLAYER_COLOR[owner]);
-        this.add
+        const tag = this.add
           .text(x, y - LAYOUT.store.height / 2 + 10, owner === 0 ? 'P1' : 'P2', this.textStyle(10, PLAYER_CSS[owner]))
           .setOrigin(0.5);
         const label = this.add.text(x, y, '0', this.textStyle(18, CSS.cream, true)).setOrigin(0.5);
+        if (this.facing && owner === 1) {
+          tag.setRotation(Math.PI);
+          label.setRotation(Math.PI);
+        }
         this.slots[i] = { shape, label };
         continue;
       }
 
       const shape = this.add.circle(x, y, LAYOUT.pitRadius, COLORS.pitShadow).setStrokeStyle(1, COLORS.woodLight);
       const label = this.add.text(x, y, '0', this.textStyle(12, CSS.cream, true)).setOrigin(0.5);
+      // "หันหน้าเข้าหากัน": the person across the table reads P2's numbers the right way up.
+      if (this.facing && i > P1_STORE) label.setRotation(Math.PI);
       this.slots[i] = { shape, label };
 
       const zone = this.add.zone(x, y, LAYOUT.cell.width, LAYOUT.cell.height).setInteractive({ useHandCursor: true });
@@ -281,6 +344,8 @@ export class GameScene extends Phaser.Scene {
 
   private createHud(): void {
     this.p2Label = this.add.text(12, 14, '', this.textStyle(12, CSS.dim, true)).setOrigin(0, 0.5);
+    // Upside down, the text must grow to the right of x from its other end.
+    if (this.facing) this.p2Label.setOrigin(1, 0.5).setRotation(Math.PI);
     this.roundLabel = this.add.text(240, 14, '', this.textStyle(10, CSS.dim)).setOrigin(0.5);
     this.speedButton = this.add
       .text(468, 14, '', this.textStyle(12, CSS.gold, true))
@@ -310,6 +375,7 @@ export class GameScene extends Phaser.Scene {
     this.input.on(
       Phaser.Input.Events.POINTER_DOWN,
       (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
+        this.lastInputTouch = pointer.wasTouch;
         if (over.includes(this.speedButton) || over.includes(this.pauseButton)) return;
         if (this.busy) {
           if (pointer.downTime !== this.moveStartTime) this.requestSkip();
@@ -425,6 +491,8 @@ export class GameScene extends Phaser.Scene {
     this.sowingPlayer = before.current;
     const result = playMove(before, pit);
     this.state = result.state;
+    this.records = addMoveToRecords(this.records, before.current, result.steps);
+    this.dropTimes = [];
     // Save at once (a reload mid-animation resumes after this move). A finished round is
     // saved as the next round, which is fully determined by it.
     const nextRound = this.state.phase === 'roundOver' ? startNextRound(this.state) : null;
@@ -489,17 +557,20 @@ export class GameScene extends Phaser.Scene {
   }
 
   private async animateStep(step: Step): Promise<void> {
+    // Only pickup + drops run on the seed rhythm; anything else restarts it afterwards.
+    if (step.kind !== 'drop') this.nextBeatAt = null;
     switch (step.kind) {
       case 'pickup':
         this.setShown(step.pit, 0);
         this.hand.setPosition(handPosition(step.pit).x, handPosition(step.pit).y).setVisible(true);
         this.handLabel.setText(String(step.seeds));
-        await this.wait(this.dropMs());
+        await this.wait(this.beat());
         break;
 
       case 'drop':
         this.dropsThisMove += 1;
-        await this.moveHandTo(step.pit, this.dropMs());
+        await this.moveHandTo(step.pit, this.beat());
+        this.dropTimes.push(this.time.now);
         this.setShown(step.pit, step.pitSeeds, true);
         this.handLabel.setText(step.handSeeds > 0 ? String(step.handSeeds) : '');
         break;
@@ -519,6 +590,7 @@ export class GameScene extends Phaser.Scene {
         await this.flySeeds(step.opposite, store, step.toStore);
         this.setShown(store, this.shown[store] + step.toStore, true);
         this.showBanner(`กิน! +${step.toStore}`, PLAYER_CSS[step.player]);
+        this.buzz(step.player);
         await this.wait(this.pauseMs(400));
         break;
       }
@@ -598,7 +670,9 @@ export class GameScene extends Phaser.Scene {
       winner: s.winner,
       stores: s.lastRound?.stores ?? [s.pits[7], s.pits[15]],
       reason: s.endReason ?? 'singleRound',
+      records: this.records,
     };
+    this.countGame(data);
     this.refreshTurnUi();
     this.messageLabel.setText('จบเกม');
     this.time.delayedCall(this.reducedMotion ? 300 : 1600, () => this.scene.start(SceneKeys.GameOver, data));
@@ -704,6 +778,37 @@ export class GameScene extends Phaser.Scene {
     if (this.reducedMotion) return 0;
     const accel = this.speed < 1 ? 1 : this.dropsThisMove > 60 ? 4 : this.dropsThisMove > 30 ? 2 : 1;
     return BASE_DROP_MS / (this.speed * accel);
+  }
+
+  /**
+   * Wait until the next seed is due. Each beat is scheduled from the previous one rather
+   * than from when the last tween happened to finish, so frame rounding does not pile up
+   * over a move and the average drop time stays on the setting (AC-UI3). After a pause
+   * (pause menu, tab in the background) the rhythm restarts instead of catching up.
+   */
+  private beat(): number {
+    const ms = this.dropMs();
+    if (ms <= 0) return 0;
+    const now = this.time.now;
+    const onSchedule = this.nextBeatAt !== null && this.nextBeatAt >= now - ms;
+    const due = (onSchedule ? (this.nextBeatAt as number) : now) + ms;
+    this.nextBeatAt = due;
+    return Math.max(0, due - now);
+  }
+
+  /** A capture: rumble the pads (and an Android phone the player is touching). */
+  private buzz(capturer: Player): void {
+    if (!this.vibration || this.skipRequested) return;
+    this.buzzCount += 1;
+    // Two people with two pads: only the capturer's pad. Otherwise every pad.
+    rumble(this.opponent === 'human' && connectedPadCount() >= 2 ? capturer : null);
+    if (this.lastInputTouch) {
+      try {
+        navigator.vibrate?.(60);
+      } catch {
+        /* no vibration motor or not allowed */
+      }
+    }
   }
 
   /** Banners and pauses: shorter when fast, but never longer than normal when slow. */

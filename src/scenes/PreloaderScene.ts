@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { SceneKeys } from '../types/scenes';
 
-/** Loads every asset with a progress bar, then shows the menu. */
+/** Loads every asset with a progress bar, then shows the title screen. */
 export class PreloaderScene extends Phaser.Scene {
   constructor() {
     super(SceneKeys.Preloader);
@@ -22,6 +22,6 @@ export class PreloaderScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.scene.start(SceneKeys.MainMenu);
+    this.scene.start(SceneKeys.Title);
   }
 }

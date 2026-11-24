@@ -1,3 +1,4 @@
+import { reachMenu } from './lib/common.mjs';
 // Smoke scenario: menu → short game → a real mouse click sows seed by seed → the board
 // on screen matches the rules engine → play to the end → result screen.
 //
@@ -7,12 +8,7 @@
 const GS = `scene('GameScene')`;
 
 export default [
-  {
-    name: 'reaches the main menu',
-    action: 'waitFor',
-    expression: `game.scene.isActive('MainMenuScene')`,
-    timeout: 10000,
-  },
+  reachMenu,
   { name: 'Space starts a short game', action: 'press', key: 'Space' },
   {
     name: 'game scene is running and the menu has closed',

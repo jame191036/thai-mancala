@@ -1,3 +1,4 @@
+import { reachMenu } from './lib/common.mjs';
 // "แบบตามวิดีโอ" (R17, ruleset 'video'): its own start buttons on the menu, carried
 // into the game and into a rematch; while a round is running neither side is ever empty.
 //
@@ -6,12 +7,7 @@
 const GS = `scene('GameScene')`;
 
 export default [
-  {
-    name: 'reaches the main menu',
-    action: 'waitFor',
-    expression: `game.scene.isActive('MainMenuScene')`,
-    timeout: 10000,
-  },
+  reachMenu,
   { name: 'menu', action: 'screenshot' },
   { name: 'click "แบบตามวิดีโอ · เกมสั้น"', action: 'click', x: 2 * 168, y: 2 * 164 },
   {

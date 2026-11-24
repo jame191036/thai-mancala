@@ -118,16 +118,22 @@
 | `npm run dev` | dev server |
 | `npm test` | Vitest (`tests/`) |
 | `npm run playtest` | scenario ใน `playtest/` บน dev server |
-| `npm run verify` | typecheck + test + playtest บน production build **ต้องผ่านก่อน commit** |
+| `npm run playtest:touch` | scenario ใน `playtest/touch/` บนมือถือจำลองแนวนอน (`--device phone-landscape`) |
+| `npm run verify` | typecheck + test + playtest ทั้งสองชุดบน production build **ต้องผ่านก่อน commit** |
 | `npm run build` | build ไปที่ `dist/` ถ้าเพิ่งรัน verify ต้อง build ใหม่ก่อน deploy เพราะ verify build แบบ `VITE_PLAYTEST` |
 
 - **โครงสร้างโค้ด:**
   - `src/main.ts`: config และ integer zoom
   - `src/types/scenes.ts`: `SceneKeys` และ type ของข้อมูลที่ส่งระหว่าง scene **ใช้แทนการพิมพ์ชื่อ scene เป็น string**
-  - `src/scenes/`: Boot → Preloader → MainMenu (เลือกเกมสั้นหรือเกมเต็ม) → Game → GameOver (ผลแพ้ชนะและเหตุผลที่จบ)
+  - `src/scenes/`: Boot → Preloader → Title (กดอะไรก็ได้) → MainMenu → Game → GameOver (ผลแพ้ชนะ, เหตุผลที่จบ, สถิติของเกม)
+    - หน้าย่อยจากแถวล่างของเมนู (`MENU_PAGES`): Settings, Stats, Credits ตอนกลับส่ง `MainMenuData.fromPage` ให้โฟกัสกลับมาที่ปุ่มเดิม
+    - `src/ui/widgets.ts`: ปุ่ม ข้อความ และกรอบโฟกัสแบบชั่วคราว ที่หน้าใหม่ใช้ร่วมกัน ตอนทำงานภาพแก้ที่ไฟล์นี้ที่เดียว
   - `src/display/`: `palette.ts` (สีตาม GDD), `boardLayout.ts` (ตำแหน่งหลุม เรือน และมือ เป็นฟังก์ชันล้วน มี test), `integerScale.ts`
   - `src/logic/`: rules engine (ดูหัวข้อด้านบน) มี `applyMove()` เป็นทางเร็วที่ใช้กติกาเดียวกับ `playMove()` แต่ไม่บันทึก step สำหรับ AI โดย fuzz test ตรวจว่าทั้งสองให้ผลตรงกันทุกตา
-  - `src/settings.ts` (ความเร็ว, จำนวนรอบ) และ `src/save.ts` (เกมที่ยังไม่จบ บันทึกทุกตา) เก็บใน localStorage ทั้งคู่ ตอนโหลด `src/logic/serialize.ts` ตรวจข้อมูลก่อนเสมอ
+  - localStorage มี 3 ช่อง ทุกช่องตรวจข้อมูลก่อนใช้ ข้อมูลเสียจะถูกแทนด้วยค่าเริ่มต้น
+    - `src/settings.ts`: ความเร็ว, จำนวนรอบ, `touchConfirm`, และค่าเปิด/ปิด `REDUCED_MOTION` / `VIBRATION` / `FACING` ผ่าน `loadFlag`/`saveFlag`
+    - `src/save.ts`: เกมที่ยังไม่จบ บันทึกทุกตา พร้อม `records` ของเกมนั้น ตรวจ state ด้วย `src/logic/serialize.ts`
+    - `src/stats.ts`: สถิติทุกเกม (`saveFinishedGame` เรียกจาก GameScene ตอนจบเกมหรือยอมแพ้) และ `addMoveToRecords` สำหรับสถิติต่อเกม เป็นโค้ดล้วน มี test
   - `PauseScene`: ซ้อนบน GameScene ที่ถูก pause อยู่ ปุ่มต่าง ๆ เรียก `resumeFromPause / restartGame / resign / quitToMenu` ของ GameScene
   - `src/input/gamepad.ts`: แปลงปุ่มจอยเป็น `PadAction` ทุก scene ฟังผ่าน `onPadAction(scene, handler)`
     - ปุ่มอ้างตามตำแหน่งของ standard mapping: ล่าง = confirm, ขวา = cancel, บน = speed, Start = pause, D-pad หรือ stick ซ้าย = ทิศ
@@ -138,19 +144,26 @@
   - `public/assets/`: asset ที่โหลดตอน runtime (ตอนนี้ยังว่าง ใช้กราฟิกชั่วคราว)
 - **GameScene:** engine คำนวณทั้งตาก่อน แล้ว scene ค่อยเล่น `steps` ทีละ step ด้วย tween จากนั้น snap ให้ตรงกับ state ของ engine
   - ระหว่างหว่าน `state.current` เป็นคนถัดไปแล้ว ป้ายบอกตาจึงต้องใช้ `sowingPlayer`
-  - field ที่เป็น public (`state`, `busy`, `choosePit()`, `legalPits()`, `displayedPits()`, `reducedMotion`, `lastMovePit`) มีไว้ให้ playtest ใช้
+  - field ที่เป็น public (`state`, `busy`, `choosePit()`, `legalPits()`, `displayedPits()`, `displayedDead()`, `reducedMotion`, `lastMovePit`, `records`, `dropTimes`, `buzzCount`) มีไว้ให้ playtest ใช้
+  - **จังหวะหว่าน:** `beat()` นัดเวลาเม็ดถัดไปต่อจากเม็ดก่อน ไม่นับจากตอนที่ tween จบ ค่าเฉลี่ยจึงตรงกับความเร็วที่ตั้ง (AC-UI3) ถ้าหยุดเกินหนึ่งจังหวะ เช่นพักเกม จะเริ่มนับใหม่ ไม่เร่งตามให้ทัน
 - **⚠️ Phaser 4.2.1 ส่ง keyboard event ซ้ำ** ถ้ากดหลายปุ่มภายในเฟรมเดียว เพราะ `KeyboardManager` ประมวลผล queue ทุกครั้งที่มี event เข้ามา แต่ล้าง queue เฟรมละครั้ง ทุกตัวดักปุ่มที่ใช้ `.on('keydown-X')` จึง**ต้องผ่าน `onKeyDown()` ใน `src/input/keys.ts`** ซึ่งกันซ้ำด้วย WeakSet ของ event ถ้าใช้ `.once` ไม่เป็นไร มี playtest ทดสอบไว้ใน `playtest/controls.mjs`
 - **Playtest จอย** (`playtest/gamepad.mjs`): แทน `navigator.getGamepads` ด้วยจอยจำลอง แล้วกดปุ่มผ่าน `window.__padDown/__padUp` ถอดจอยผ่าน `window.__unplug(i)` หลังเปลี่ยน scene ต้องรอประมาณ 300 ms ก่อนกดปุ่มจอย
-- **Playtest:** action `scene` ของ harness เรียก `game.scene.start` จากส่วนกลาง scene เดิม (เช่นเมนู) จึงยังรันค้างอยู่ ให้เข้าเกมผ่านเมนูก่อน แล้วค่อยใช้ `scene` restart พร้อมข้อมูล ส่วนพิกัด `click` เป็น CSS px ที่ k = 2 (คูณ 2 จากพิกัดเกม)
-- **`tools/playtest.mjs` แก้เพิ่มจากที่ scaffold ให้มา เพื่อให้ใช้บน Windows ได้** ถ้าอัปเดต skill แล้ว copy harness ใหม่มาทับ ต้องใส่ 2 จุดนี้กลับ
-  1. ลบโค้ดสี ANSI ออกก่อนหา URL ของ server
-  2. ใช้ `taskkill /T` ปิด process ทั้งชุด ไม่ให้ preview server ค้าง
+- **Playtest:**
+  - action `scene` ของ harness เรียก `game.scene.start` จากส่วนกลาง scene เดิม (เช่นเมนู) จึงยังรันค้างอยู่ ให้เข้าเกมผ่านเมนูก่อน แล้วค่อยใช้ `scene` restart พร้อมข้อมูล
+  - พิกัด `click` เป็น CSS px ที่ k = 2 (คูณ 2 จากพิกัดเกม) ส่วนใน `playtest/touch/` k = 4 ที่ dpr 3 จึงคูณ 4/3
+  - **ทุก scenario เริ่มด้วย `reachMenu`** จาก `playtest/lib/common.mjs` เพื่อผ่านหน้า Title (โฟลเดอร์ย่อยไม่ถูกรันเป็น scenario) harness คลิกแคนวาสหลังโหลดเสร็จ และคลิกนั้นพาออกจาก Title ไปแล้ว
+  - **อยากได้กระดานเฉพาะ:** restart GameScene ด้วย `{ resume: { state, opponent } }` โดย copy `state` เดิมแล้วแก้ `pits` / `current` / `ruleset` แบบใน `timing.mjs`
+- **`tools/playtest.mjs` แก้เพิ่มจากที่ scaffold ให้มา** ถ้าอัปเดต skill แล้ว copy harness ใหม่มาทับ ต้องใส่ 3 จุดนี้กลับ
+  1. ลบโค้ดสี ANSI ออกก่อนหา URL ของ server (Windows)
+  2. ใช้ `taskkill /T` ปิด process ทั้งชุด ไม่ให้ preview server ค้าง (Windows)
+  3. device preset `phone-landscape` (844×390 @ dpr 3, UA Android) สำหรับ `playtest/touch/`
 - **เครื่องใหม่ต้องรัน `npx playwright install chromium` 1 ครั้ง** ก่อน playtest
-- **CI:** `.github/workflows/ci.yml` รัน verify ทุกครั้งที่ push หรือเปิด PR ส่วน `deploy-pages.yml` deploy ขึ้น GitHub Pages เมื่อ push tag
+- **CI:** `.github/workflows/ci.yml` รัน verify เมื่อ push ขึ้น `main` หรือเปิด PR (push ขึ้น `dev` อย่างเดียวไม่รัน) ส่วน `deploy-pages.yml` deploy ขึ้น GitHub Pages เมื่อ push tag
+- **Branch:** งานใหม่ทำบน `dev` แล้ว merge เข้า `main` เมื่อเจ้าของสั่ง (เริ่ม 2026-11-24)
 
 ## สถานะปัจจุบัน
 - มี GDD v0.2 และ acceptance criteria แล้ว
-- Scaffold Phaser 4 เสร็จแล้ว `npm run verify` ผ่าน (unit 147, playtest 169)
+- Scaffold Phaser 4 เสร็จแล้ว `npm run verify` ผ่าน (unit 159, playtest 249, touch 25) มี warning WebGL context lost 1 ข้อจาก scenario ที่รีโหลดหน้า ไม่ใช่ error
 - **M0 rules engine เสร็จแล้ว** (`src/logic/`) ผ่าน F1–F16, AC-R1–R19 และ fuzz test (เกมสั้นและเกมเต็มที่สุ่มเล่นจบทุกเกม)
 - **GameScene เล่นได้ครบด้วยกราฟิกชั่วคราว** (วงกลม + ตัวเลข)
   - 2 คนเครื่องเดียว มีทั้งเกมสั้นและเกมเต็ม 3 รอบ
@@ -158,11 +171,22 @@
   - คลิกบนเดสก์ท็อป, แตะ 2 ครั้งบนมือถือ, คีย์บอร์ด ← → Enter
 - **มี AI 3 ระดับแล้ว** (เลือกในเมนูแถว "เล่นกับ" ด้วยคลิกหรือ ← →) AI เป็นผู้เล่น 2 ผ่าน AC-AI1 และ AC-AI2 ทั้งสองกติกา
 - **รู้ไว้:** ในแบบดั้งเดิม คนเดินก่อนชนะเกือบแน่นอน (ตาแรกเก็บได้ถึง 95/98 เม็ด) เจ้าของเลือก**คงไว้ตามเดิม** (GDD Appendix A ข้อ 4) **อย่าแก้กติกาหรือเสนอซ้ำ** เว้นแต่เจ้าของยกขึ้นมาเอง
-- **มีแล้ว:** เลือกเกมเต็ม 3/5/7 รอบ, หน้าพักเกม (เล่นต่อ, เริ่มใหม่, ยอมแพ้, กลับเมนู), บันทึกเกมและเล่นต่อหลังรีโหลด (AC-S1, AC-S2), จอย (AC-G1–G5 ทดสอบด้วยจอยจำลอง **ยังไม่ได้ลองกับจอยจริง**)
-- **ยังไม่มี:** เสียง, งาน pixel art จริง, tutorial, สถิติ, จอยสั่น, ป้ายปุ่มที่เปลี่ยนตาม input
-- **ลำดับงานที่ตกลงกับเจ้าของ:** (1) 5/7 รอบ ✅ (2) พักเกมและบันทึก ✅ (3) จอย ✅ แล้วต่อด้วย **Beta** คือ ตัวอักษรไทยแบบพิกเซล, งานภาพ codixel, เสียง, tutorial, มือถือและ PWA
-- **ยังไม่ได้ทดสอบอัตโนมัติ:** แตะ 2 ครั้งบนมือถือ (AC-UI8) เพราะต้องใช้ harness ที่จำลองการแตะ (`--device`)
-- ตอน Alpha ต้องให้ AI เล่นกันเพื่อดูว่าเกมเต็ม 3 รอบใช้เวลาจริงเท่าไหร่ ถ้าจะปรับตัวเลือก 3/5/7 ต้องถามเจ้าของก่อน
+- **มีแล้ว:**
+  - เลือกเกมเต็ม 3/5/7 รอบ
+  - หน้าพักเกม (เล่นต่อ, เริ่มใหม่, ยอมแพ้, กลับเมนู)
+  - บันทึกเกมและเล่นต่อหลังรีโหลด (AC-S1, AC-S2)
+  - จอย (AC-G1–G5 ทดสอบด้วยจอยจำลอง **ยังไม่ได้ลองกับจอยจริง**) และจอยสั่นตอนกิน
+  - **งานค้าง Alpha เสร็จแล้ว (2026-11-24):**
+    - หน้า Title, ตั้งค่า, สถิติ, เครดิต
+    - สถิติต่อเกมในหน้าผลแพ้ชนะ
+    - เช็กว่าหลุมตายบนจอตรงกับ engine (AC-R10–R12)
+    - จับเวลาหว่านแม่น ±10 ms (AC-UI3)
+    - playtest แตะ 2 ครั้งบนมือถือจำลอง (AC-UI8)
+    - วัดเวลาเล่นจริง (GDD Appendix A ข้อ 3)
+- **เจ้าของตัดสิน 2026-11-24:** "หันหน้าเข้าหากัน" ปิดเป็นค่าเริ่มต้น และหน้าเครดิตไม่ใส่ชื่อผู้พัฒนา
+- **ยังไม่มี:** เสียง, งาน pixel art จริง, tutorial, ป้ายปุ่มที่เปลี่ยนตาม input, ตัวเลือก "แสดงตัวเลข" (รอมีภาพเม็ด), หน้าจอหมุนเครื่อง, เต็มจอบน Android
+- **ลำดับงานที่ตกลงกับเจ้าของ:** (1) 5/7 รอบ ✅ (2) พักเกมและบันทึก ✅ (3) จอย ✅ (4) งานค้าง Alpha ✅ แล้วต่อด้วย **Beta บน branch `dev`** คือ ตัวอักษรไทยแบบพิกเซล, งานภาพ codixel, เสียง, tutorial, มือถือและ PWA
+- **เวลาเล่นจริงที่วัดได้:** เกมเต็ม 3 รอบใช้ 7–15 นาที น้อยกว่าที่ GDD ประมาณไว้ (15–30 นาที) ถ้าจะปรับตัวเลือก 3/5/7 ต้องถามเจ้าของก่อน
 - **มี 2 กติกา และแต่ละแบบมีปุ่มเริ่มเกมของตัวเองในเมนู** (เจ้าของขอให้แยกปุ่ม ไม่ใช้ปุ่มสลับ)
   - "แบบดั้งเดิม" (`traditional`): ปุ่มลัด 1 = เกมสั้น, 2 = เกมเต็ม, Space = เกมสั้น
   - "แบบตามวิดีโอ" (`video`, R17): ปุ่มลัด 3 = เกมสั้น, 4 = เกมเต็ม

@@ -1,12 +1,8 @@
+import { reachMenu } from './lib/common.mjs';
 // AC-UI1 (docs/acceptance-criteria.md): integer scale in device pixels, base 480×270.
 // Runs with the harness default viewport (1280×720 @ dpr 1 → k = 2, canvas shown at 960×540).
 export default [
-  {
-    name: 'reaches the main menu',
-    action: 'waitFor',
-    expression: `game.scene.isActive('MainMenuScene')`,
-    timeout: 10000,
-  },
+  reachMenu,
   {
     name: 'canvas backing store is the 480×270 base resolution',
     action: 'expect',

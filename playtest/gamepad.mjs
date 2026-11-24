@@ -1,3 +1,4 @@
+import { reachMenu } from './lib/common.mjs';
 // Gamepad (GDD §3.8.1, AC-G1–G5). Headless Chromium has no pads, so navigator.getGamepads()
 // is replaced by fake "standard"-mapping pads whose buttons the steps press and release.
 // Phaser polls getGamepads() every frame, exactly as it does with a real pad.
@@ -33,12 +34,7 @@ const tap = (name, button, pad = '0') => {
 const settle = (name) => ({ name: `${name} (settle)`, action: 'wait', ms: SETTLE });
 
 export default [
-  {
-    name: 'reaches the main menu',
-    action: 'waitFor',
-    expression: `game.scene.isActive('MainMenuScene')`,
-    timeout: 10000,
-  },
+  reachMenu,
   {
     name: 'plug in one fake gamepad',
     action: 'eval',
@@ -48,7 +44,10 @@ export default [
         axes: [0, 0, 0, 0],
         buttons: Array.from({ length: 17 }, () => ({ pressed: false, touched: false, value: 0 })),
         get timestamp() { return performance.now(); },
+        // Rumble support: record every effect played on this pad.
+        vibrationActuator: { playEffect: (type) => { window.__rumbles.push({ pad: index, type }); return Promise.resolve('complete'); } },
       });
+      window.__rumbles = [];
       window.__mkPad = mk;
       window.__pads = [mk(0)];
       Object.defineProperty(navigator, 'getGamepads', { value: () => window.__pads.slice(), configurable: true });
@@ -213,4 +212,29 @@ export default [
   ...tap('A', A),
   { name: 'A on "เมนู" goes to the menu', action: 'waitFor', expression: `game.scene.isActive('MainMenuScene') && !game.scene.isActive('GameOverScene')`, timeout: 3000 },
   { name: 'a finished game leaves no save', action: 'expect', expect: { expression: `scene('MainMenuScene').hasSave`, equals: false } },
+
+  // ── Rumble on a capture (GDD §3.8.1), and the Settings switch that turns it off ──
+  // P1 sows its single seed in pit 5 into the empty pit 6 and captures pit 8 (7 + 1 = 8).
+  settle('menu after the result'),
+  ...tap('A on "เกมสั้น" again', A),
+  { name: 'another game', action: 'waitFor', expression: `game.scene.isActive('GameScene') && !game.scene.isActive('MainMenuScene')`, timeout: 5000 },
+  ...[true, false].flatMap((on) => [
+    {
+      name: `vibration ${on ? 'on' : 'off'}: load the capture board`,
+      action: 'eval',
+      code: `game.registry.set('vibration', ${on});
+        const s = ${GS}; const st = JSON.parse(JSON.stringify(s.state));
+        st.pits = [7, 7, 7, 7, 7, 1, 0, 13, 7, 7, 7, 7, 7, 7, 7, 0]; st.current = 0; st.ruleset = 'traditional'; st.phase = 'playing';
+        s.scene.restart({ resume: { state: st, opponent: 'human' } });`,
+    },
+    { name: `vibration ${on ? 'on' : 'off'}: board ready`, action: 'waitFor', expression: `${GS}.state.pits[5] === 1 && !${GS}.busy`, timeout: 3000 },
+    { name: `vibration ${on ? 'on' : 'off'}: sow pit 5`, action: 'eval', code: `window.__rumbles = []; ${GS}.choosePit(5);` },
+    { name: `vibration ${on ? 'on' : 'off'}: move done`, action: 'waitFor', expression: `!${GS}.busy`, timeout: 5000 },
+    { name: `vibration ${on ? 'on' : 'off'}: it was a capture of 8`, action: 'expect', expect: { expression: `${GS}.records.maxCapture[0]`, equals: 8 } },
+    {
+      name: on ? 'the capture rumbled the pad' : 'vibration off: no rumble',
+      action: 'expect',
+      expect: { expression: `[${GS}.buzzCount, window.__rumbles.length]`, equals: on ? [1, 1] : [0, 0] },
+    },
+  ]),
 ];

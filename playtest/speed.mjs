@@ -1,3 +1,4 @@
+import { reachMenu } from './lib/common.mjs';
 // Sowing speed setting: picked on the menu, used in the game, and the slow settings really
 // slow the seeds down. Menu row "ความเร็วหว่าน" at y 220, x 148/202/256/310/364
 // (ช้ามาก … เร็วมาก, see MENU_LAYOUT); clicks are ×2.
@@ -7,12 +8,7 @@
 const GS = `scene('GameScene')`;
 
 export default [
-  {
-    name: 'reaches the main menu',
-    action: 'waitFor',
-    expression: `game.scene.isActive('MainMenuScene')`,
-    timeout: 10000,
-  },
+  reachMenu,
   { name: 'default speed is ปกติ', action: 'expect', expect: { expression: `scene('MainMenuScene').speed`, equals: 1 } },
   { name: 'click "ช้ามาก"', action: 'click', x: 2 * 148, y: 2 * 220 },
   { name: 'menu speed is ช้ามาก', action: 'expect', expect: { expression: `scene('MainMenuScene').speed`, equals: 0.25 } },

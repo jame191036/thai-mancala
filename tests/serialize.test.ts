@@ -67,8 +67,17 @@ describe('parseSavedGame', () => {
   const state = createGame('short', 1, { ruleset: 'video' });
   const good = { version: 1, savedAt: 0, state: roundTrip(state), opponent: 'hard' };
 
-  it('reads a current-version save', () => {
-    expect(parseSavedGame(good)).toEqual({ state, opponent: 'hard' });
+  it('reads a current-version save (an older one without records starts with empty records)', () => {
+    expect(parseSavedGame(good)).toEqual({ state, opponent: 'hard', records: { maxCapture: [0, 0], maxRelay: [0, 0] } });
+  });
+
+  it('keeps the game records, and replaces malformed ones with empty records', () => {
+    const records = { maxCapture: [12, 3], maxRelay: [4, 0] };
+    expect(parseSavedGame({ ...good, records })?.records).toEqual(records);
+    expect(parseSavedGame({ ...good, records: { maxCapture: [-1, 3], maxRelay: [4, 0] } })?.records).toEqual({
+      maxCapture: [0, 0],
+      maxRelay: [0, 0],
+    });
   });
 
   it.each([

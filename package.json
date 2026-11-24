@@ -11,7 +11,9 @@
     "test": "vitest run",
     "playtest": "node tools/playtest.mjs --project . --scenario playtest",
     "playtest:build": "node tools/playtest.mjs --project . --mode build --scenario playtest",
-    "verify": "npm run typecheck && npm test && npm run playtest:build"
+    "playtest:touch": "node tools/playtest.mjs --project . --device phone-landscape --scenario playtest/touch",
+    "playtest:touch:build": "node tools/playtest.mjs --project . --mode build --device phone-landscape --scenario playtest/touch",
+    "verify": "npm run typecheck && npm test && npm run playtest:build && npm run playtest:touch:build"
   },
   "dependencies": {
     "phaser": "^4.2.1"

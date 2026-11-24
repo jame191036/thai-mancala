@@ -96,10 +96,35 @@ export function onPadDisconnected(scene: Phaser.Scene, handler: () => void): voi
  * that snapshot still says `connected: true` after the pad is unplugged.
  */
 function connectedPadIndices(): number[] {
+  return livePads().map((p) => p.index);
+}
+
+/** Connected pads as the browser reports them right now, in index order. */
+function livePads(): Gamepad[] {
   const pads = typeof navigator !== 'undefined' && navigator.getGamepads ? navigator.getGamepads() : [];
-  const out: number[] = [];
-  for (const p of pads ?? []) if (p && p.connected !== false) out.push(p.index);
-  return out.sort((a, b) => a - b);
+  const out: Gamepad[] = [];
+  for (const p of pads ?? []) if (p && p.connected !== false) out.push(p);
+  return out.sort((a, b) => a.index - b.index);
+}
+
+interface Rumbler {
+  playEffect?: (type: string, params: Record<string, number>) => Promise<unknown>;
+}
+
+/**
+ * Rumble pad `slot` (or every pad when `slot` is null) if the browser supports it
+ * (GDD §3.8.1: a capture). The actuator is taken from the live pad, not Phaser's copy.
+ */
+export function rumble(slot: number | null, ms = 140): void {
+  livePads().forEach((pad, i) => {
+    if (slot !== null && i !== slot) return;
+    const actuator = (pad as unknown as { vibrationActuator?: Rumbler | null }).vibrationActuator;
+    try {
+      void actuator?.playEffect?.('dual-rumble', { duration: ms, strongMagnitude: 0.7, weakMagnitude: 0.4 })?.catch(() => {});
+    } catch {
+      /* no rumble on this pad */
+    }
+  });
 }
 
 /** Number of gamepads connected right now. */

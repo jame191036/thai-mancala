@@ -1,3 +1,4 @@
+import { reachMenu } from './lib/common.mjs';
 // Pause menu and save/resume (GDD §7 pause, AC-S1): play a few moves, pause, resume,
 // go back to the menu, RELOAD THE PAGE, continue the saved game exactly, then resign.
 // In-game "≡ พักเกม" button: right-aligned at base (468, 236) → click (440, 236) ×2.
@@ -5,12 +6,7 @@ const GS = `scene('GameScene')`;
 const PAUSED = `game.scene.isActive('PauseScene') && game.scene.isPaused('GameScene')`;
 
 export default [
-  {
-    name: 'reaches the main menu',
-    action: 'waitFor',
-    expression: `game.scene.isActive('MainMenuScene')`,
-    timeout: 10000,
-  },
+  reachMenu,
   { name: 'no saved game yet', action: 'expect', expect: { expression: `scene('MainMenuScene').hasSave`, equals: false } },
   // Settings chosen now must survive the reload below (AC-S2): "ช้า" (202, 220), "5 รอบ" (202, 194).
   { name: 'pick speed ช้า', action: 'click', x: 2 * 202, y: 2 * 220 },
@@ -66,6 +62,7 @@ export default [
     expression: `(() => {
       if (window.__PHASER_GAME__) window.__playtestGame = window.__PHASER_GAME__;
       const g = window.__playtestGame;
+      if (g && g.scene.isActive('TitleScene')) g.scene.getScene('TitleScene').start();
       return !!g && g.scene.isActive('MainMenuScene');
     })()`,
     timeout: 15000,

@@ -1,14 +1,10 @@
+import { reachMenu } from './lib/common.mjs';
 // Controls: tap-anywhere skip (AC-UI4), speed button (AC-UI3), keyboard play, and
 // clicks on pits that may not be played. Click coordinates: see smoke.mjs (k = 2).
 const GS = `scene('GameScene')`;
 
 export default [
-  {
-    name: 'reaches the main menu',
-    action: 'waitFor',
-    expression: `game.scene.isActive('MainMenuScene')`,
-    timeout: 10000,
-  },
+  reachMenu,
   // Enter the game through the menu first, so MainMenuScene really shuts down (the
   // harness `scene` action alone would leave the menu running, and its Enter key too).
   { name: 'Space starts a game from the menu', action: 'press', key: 'Space' },

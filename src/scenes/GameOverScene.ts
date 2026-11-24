@@ -15,7 +15,7 @@ export type GameOverChoice = 'rematch' | 'menu';
 const CHOICES: readonly GameOverChoice[] = ['rematch', 'menu'];
 
 /** Button centres (base px), for playtests. */
-export const GAME_OVER_LAYOUT = { y: 184, rematchX: 170, menuX: 310 } as const;
+export const GAME_OVER_LAYOUT = { y: 208, rematchX: 170, menuX: 310 } as const;
 
 /**
  * Result screen: who won, the store totals, and why the game ended.
@@ -50,13 +50,20 @@ export class GameOverScene extends Phaser.Scene {
     const title = data.winner === null ? 'เสมอ!' : `${names[data.winner]} ชนะ!`;
     text(60, title, 32, data.winner === null ? CSS.gold : PLAYER_CSS[data.winner]);
     text(104, `${names[0]}  ${data.stores[0]} : ${data.stores[1]}  ${names[1]}`, 16, CSS.cream);
-    text(132, reasonText(data, names), 11, CSS.dim, false);
-    text(150, `${RULESET_NAME[data.ruleset]}: ${RULESET_SUMMARY[data.ruleset]}`, 10, CSS.dim, false);
+    text(130, reasonText(data, names), 11, CSS.dim, false);
+    text(146, `${RULESET_NAME[data.ruleset]}: ${RULESET_SUMMARY[data.ruleset]}`, 10, CSS.dim, false);
+
+    // This game's records (GDD §7 Result). The video rules have no relays (R17).
+    const r = data.records;
+    text(166, `กินมากสุดในครั้งเดียว   ${names[0]}: ${r.maxCapture[0]} เม็ด  ·  ${names[1]}: ${r.maxCapture[1]} เม็ด`, 10, CSS.cream, false);
+    if (data.ruleset === 'traditional') {
+      text(180, `หว่านต่อยาวสุด   ${names[0]}: ${r.maxRelay[0]} ทอด  ·  ${names[1]}: ${r.maxRelay[1]} ทอด`, 10, CSS.cream, false);
+    }
 
     this.button('rematch', GAME_OVER_LAYOUT.rematchX, 'เล่นอีกครั้ง');
     this.button('menu', GAME_OVER_LAYOUT.menuX, 'เมนู');
     this.refresh();
-    text(232, '← → เลือก  ·  ENTER / จอย A ตกลง  ·  ESC / จอย B = เมนู', 10, CSS.dim, false);
+    text(244, '← → เลือก  ·  ENTER / จอย A ตกลง  ·  ESC / จอย B = เมนู', 10, CSS.dim, false);
 
     const move = (dir: -1 | 1) => {
       const i = CHOICES.indexOf(this.focus);

@@ -2,14 +2,23 @@ import { describe, expect, it } from 'vitest';
 import type Phaser from 'phaser';
 import {
   DEFAULT_SOW_SPEED,
+  FACING,
+  REDUCED_MOTION,
   SOW_SPEEDS,
+  VIBRATION,
+  loadFlag,
   loadFullGameRounds,
   loadSowSpeed,
+  loadTouchConfirm,
   nextSowSpeed,
+  parseFlag,
   parseFullGameRounds,
   parseSowSpeed,
+  parseTouchConfirm,
+  saveFlag,
   saveFullGameRounds,
   saveSowSpeed,
+  saveTouchConfirm,
 } from '../src/settings';
 
 /** Just enough of Phaser's DataManager for the settings helpers. */
@@ -68,5 +77,36 @@ describe('full game round count setting (R16)', () => {
     expect(loadFullGameRounds(registry)).toBe(3);
     saveFullGameRounds(registry, 7);
     expect(loadFullGameRounds(registry)).toBe(7);
+  });
+});
+
+describe('settings screen options', () => {
+  it('touch: two taps by default (GDD §3.8), one tap only when chosen', () => {
+    expect(parseTouchConfirm('single')).toBe('single');
+    expect(parseTouchConfirm('double')).toBe('double');
+    expect(parseTouchConfirm(undefined)).toBe('double');
+    expect(parseTouchConfirm(1)).toBe('double');
+    const registry = fakeRegistry();
+    expect(loadTouchConfirm(registry)).toBe('double');
+    saveTouchConfirm(registry, 'single');
+    expect(loadTouchConfirm(registry)).toBe('single');
+  });
+
+  it('on/off settings: defaults, and only real booleans are accepted', () => {
+    const registry = fakeRegistry();
+    expect(loadFlag(registry, VIBRATION)).toBe(true);
+    expect(loadFlag(registry, FACING)).toBe(false); // owner's choice 2026-11-24
+    expect(loadFlag(registry, REDUCED_MOTION)).toBe(false); // no "reduce motion" system setting here
+    expect(parseFlag('yes', false)).toBe(false);
+    expect(parseFlag(1, true)).toBe(true);
+    expect(parseFlag(false, true)).toBe(false);
+  });
+
+  it('a saved on/off setting is read back', () => {
+    const registry = fakeRegistry();
+    saveFlag(registry, FACING, true);
+    saveFlag(registry, VIBRATION, false);
+    saveFlag(registry, REDUCED_MOTION, true);
+    expect([loadFlag(registry, FACING), loadFlag(registry, VIBRATION), loadFlag(registry, REDUCED_MOTION)]).toEqual([true, false, true]);
   });
 });

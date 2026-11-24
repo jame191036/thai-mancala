@@ -106,6 +106,9 @@ const DEVICES = {
     ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1' },
   android: { width: 412, height: 915, dpr: 2.6, mobile: true,
     ua: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36' },
+  // หมากขุม: a phone held landscape (the game is landscape-only). 844×390 @ dpr 3 → k = 4.
+  'phone-landscape': { width: 844, height: 390, dpr: 3, mobile: true,
+    ua: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36' },
 };
 
 // ── Output helpers ────────────────────────────────────────────────────────────
