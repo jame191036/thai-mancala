@@ -1,25 +1,25 @@
 import Phaser from 'phaser';
 import { CSS } from '../display/palette';
-import type { PixelText } from '../display/pixelText';
+import { addPixelText, digits, type PixelText } from '../display/pixelText';
 import { onKeyDown } from '../input/keys';
 import { onPadAction } from '../input/gamepad';
 import type { GameMode } from '../logic/types';
 import { GAME_MODES, clearStats, loadStats, totalGames, type PlayerStats, type Tally } from '../stats';
 import { OPPONENTS, OPPONENT_LABEL, SceneKeys, type MainMenuData } from '../types/scenes';
-import { addButton, addText, createFocusFrame, frameAround, paintButton } from '../ui/widgets';
+import { TEXT_SIZE, addButton, addText, createFocusFrame, frameAround, paintButton } from '../ui/widgets';
 
 export type StatsChoice = 'back' | 'clear';
 const CHOICES: readonly StatsChoice[] = ['back', 'clear'];
 
 /** Button centres (base px), for playtests. */
-export const STATS_LAYOUT = { y: 236, backX: 196, clearX: 290 } as const;
+export const STATS_LAYOUT = { y: 232, backX: 190, clearX: 290 } as const;
 
 const MODE_LABEL: Record<GameMode, string> = { short: 'เกมสั้น', full: 'เกมเต็ม' };
 /** Centre of each mode's three number columns: P1 wins, P2 wins, draws. */
-const MODE_X: Record<GameMode, number> = { short: 226, full: 376 };
-const COL_GAP = 40;
+const MODE_X: Record<GameMode, number> = { short: 222, full: 384 };
+const COL_GAP = 50;
 const TALLY_KEYS: readonly (keyof Tally)[] = ['p1', 'p2', 'draw'];
-const ROW_Y = [74, 91, 108, 125];
+const ROW_Y = [70, 87, 104, 121];
 
 /**
  * Statistics (GDD §4 Scoring): results per opponent and game length, and the records set
@@ -49,28 +49,29 @@ export class StatsScene extends Phaser.Scene {
     this.cells = [];
     const { width } = this.scale;
 
-    addText(this, width / 2, 16, 'สถิติ', 18, CSS.gold);
+    addText(this, width / 2, 12, 'สถิติ', 18, CSS.gold);
     for (const m of GAME_MODES) {
-      addText(this, MODE_X[m], 38, MODE_LABEL[m], 12, CSS.gold);
-      ['P1 ชนะ', 'P2 ชนะ', 'เสมอ'].forEach((h, i) => addText(this, MODE_X[m] + (i - 1) * COL_GAP, 55, h, 12, CSS.dim, false));
+      addText(this, MODE_X[m], 34, MODE_LABEL[m], TEXT_SIZE, CSS.gold);
+      ['P1 ชนะ', 'P2 ชนะ', 'เสมอ'].forEach((h, i) => addText(this, MODE_X[m] + (i - 1) * COL_GAP, 52, h, TEXT_SIZE, CSS.dim, false));
     }
     OPPONENTS.forEach((o, r) => {
-      addText(this, 150, ROW_Y[r], o === 'human' ? '2 คน' : `กับ ${OPPONENT_LABEL[o]}`, 12, CSS.cream).setOrigin(1, 0.5);
+      addText(this, 146, ROW_Y[r], o === 'human' ? '2 คน' : `กับ ${OPPONENT_LABEL[o]}`, TEXT_SIZE, CSS.cream).setOrigin(1, 0.5);
       for (const m of GAME_MODES) {
         TALLY_KEYS.forEach((key, i) => {
-          this.cells.push({ text: addText(this, MODE_X[m] + (i - 1) * COL_GAP, ROW_Y[r], '', 12, CSS.cream, false), opponent: o, mode: m, key });
+          this.cells.push({ text: addPixelText(this, MODE_X[m] + (i - 1) * COL_GAP, ROW_Y[r] + 2, '', digits(TEXT_SIZE, CSS.cream)), opponent: o, mode: m, key });
         });
       }
     });
 
-    this.total = addText(this, width / 2, 145, '', 12, CSS.dim, false);
-    this.records = [164, 181, 198].map((y) => addText(this, width / 2, y, '', 12, CSS.cream, false));
-    addText(this, width / 2, 216, 'สถิติพิเศษนับเฉพาะคน ไม่นับ AI · ยอมแพ้นับเป็นแพ้', 12, CSS.dim, false);
+    this.total = addText(this, width / 2, 140, '', TEXT_SIZE, CSS.dim, false);
+    const spots = [[128, 164], [352, 164], [width / 2, 187]];
+    this.records = spots.map(([x, y]) => addText(this, x, y, '', TEXT_SIZE, CSS.cream, false));
+    addText(this, width / 2, 209, 'สถิติพิเศษนับเฉพาะคน ไม่นับ AI · ยอมแพ้นับเป็นแพ้', TEXT_SIZE, CSS.dim, false);
     this.fill();
 
     this.buttons.set('back', addButton(this, STATS_LAYOUT.backX, STATS_LAYOUT.y, 'กลับ', { width: 70, onClick: () => this.choose('back'), onHover: () => this.setFocus('back') }));
     this.buttons.set('clear', addButton(this, STATS_LAYOUT.clearX, STATS_LAYOUT.y, 'ล้างสถิติ', { width: 110, onClick: () => this.choose('clear'), onHover: () => this.setFocus('clear') }));
-    addText(this, width / 2, 258, '← → เลือก · Enter / จอย A ตกลง · Esc / จอย B กลับ', 12, CSS.dim, false);
+    addText(this, width / 2, 258, '← → เลือก · Enter / จอย A ตกลง · Esc / จอย B กลับ', TEXT_SIZE, CSS.dim, false);
     this.frame = createFocusFrame(this);
     this.refresh();
 

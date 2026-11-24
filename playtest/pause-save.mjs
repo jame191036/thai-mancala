@@ -1,7 +1,7 @@
 import { reachMenu } from './lib/common.mjs';
 // Pause menu and save/resume (GDD §7 pause, AC-S1): play a few moves, pause, resume,
 // go back to the menu, RELOAD THE PAGE, continue the saved game exactly, then resign.
-// In-game "≡ พักเกม" button: right-aligned at base (468, 236) → click (440, 236) ×2.
+// In-game "≡ พักเกม" button: right-aligned at base (468, 231) → click (440, 231) ×2.
 const GS = `scene('GameScene')`;
 const PAUSED = `game.scene.isActive('PauseScene') && game.scene.isPaused('GameScene')`;
 
@@ -9,13 +9,13 @@ export default [
   reachMenu,
   { name: 'no saved game yet', action: 'expect', expect: { expression: `scene('MainMenuScene').hasSave`, equals: false } },
   // Settings chosen now must survive the reload below (AC-S2): speed "ช้า" (202, 158), and
-  // "เกมเต็ม · 5 รอบ" from the length dropdown at (218, 128) (its option at y 128 + 60).
-  { name: 'pick speed ช้า', action: 'click', x: 2 * 202, y: 2 * 158 },
-  { name: 'open the length dropdown', action: 'click', x: 2 * 218, y: 2 * 128 },
+  // "เกมเต็ม · 5 รอบ" from the length dropdown at (218, 130) (its option at y 130 + 72).
+  { name: 'pick speed ช้า', action: 'click', x: 2 * 199, y: 2 * 158 },
+  { name: 'open the length dropdown', action: 'click', x: 2 * 218, y: 2 * 130 },
   // Objects made during a click only take input from the next frame on: wait a moment.
   { name: 'the list is open', action: 'waitFor', expression: `scene('MainMenuScene').dropdownOpen`, timeout: 1000 },
   { name: 'let the list settle', action: 'wait', ms: 100 },
-  { name: 'pick 5 rounds', action: 'click', x: 2 * 218, y: 2 * 188 },
+  { name: 'pick 5 rounds', action: 'click', x: 2 * 218, y: 2 * 202 },
   { name: 'a 5-round full game chosen', action: 'expect', expect: { expression: `[scene('MainMenuScene').mode, scene('MainMenuScene').rounds]`, equals: ['full', 5] } },
   // Keyboard: from "เริ่มเกม" ↑ speed, ↑ length, ↑ ruleset, then → = "แบบตามวิดีโอ".
   ...['speed', 'length', 'ruleset'].map((row) => ({ name: `↑ to ${row}`, action: 'press', key: 'ArrowUp' })),
@@ -41,7 +41,7 @@ export default [
   { name: 'remember the board', action: 'eval', code: `sessionStorage.setItem('__expect', JSON.stringify(${GS}.state));` },
 
   // Pause with the on-screen button, resume with Esc.
-  { name: 'click "≡ พักเกม"', action: 'click', x: 2 * 440, y: 2 * 236 },
+  { name: 'click "≡ พักเกม"', action: 'click', x: 2 * 440, y: 2 * 231 },
   { name: 'pause menu open, game frozen', action: 'waitFor', expression: PAUSED, timeout: 2000 },
   { name: 'pause-menu', action: 'screenshot' },
   { name: 'Esc resumes', action: 'press', key: 'Escape' },

@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { FULL_GAME_ROUND_OPTIONS } from '../logic/rules';
 import type { GameMode, Ruleset } from '../logic/types';
 import { COLORS, CSS } from '../display/palette';
-import { addPixelText, type PixelText, type PixelTextStyle } from '../display/pixelText';
+import { TEXT_SIZE, addPixelText, type PixelText, type PixelTextStyle } from '../display/pixelText';
 import { onKeyDown } from '../input/keys';
 import { onPadAction, type PadAction } from '../input/gamepad';
 import { loadSavedGame } from '../save';
@@ -37,27 +37,28 @@ import { Dropdown } from '../ui/dropdown';
 
 /** Positions (base px). Playtests click these, so keep them in sync with playtest/*.mjs. */
 export const MENU_LAYOUT = {
-  titleY: 22,
-  opponentY: 56,
+  titleY: 8,
+  continueY: 18,
+  opponentY: 54,
   opponentX: [150, 220, 290, 360],
   /** Dropdowns: centre x and width (left edge lines up with the opponent buttons). */
   dropdownX: 218,
   dropdownW: 200,
-  rulesetY: 86,
-  summaryY: 106,
-  lengthY: 128,
+  rulesetY: 82,
+  summaryY: 107,
+  lengthY: 130,
   speedY: 158,
-  speedX: [148, 202, 256, 310, 364],
+  speedX: [143, 199, 255, 311, 367],
   startX: 240,
-  startY: 192,
+  startY: 191,
   /** ตั้งค่า / สถิติ / เครดิต (MENU_PAGES) */
   pagesX: [176, 240, 304],
-  pagesY: 230,
+  pagesY: 226,
   hintY: 256,
 } as const;
 
 /** Small option buttons (choice rows and the bottom row). */
-const CHOICE_STYLE: PixelTextStyle = { size: 12, color: CSS.cream, background: CSS.woodDark, padding: { x: 3, y: 2 } };
+const CHOICE_STYLE: PixelTextStyle = { size: TEXT_SIZE, color: CSS.cream, background: CSS.woodDark, padding: { x: 3, y: 0 } };
 
 type RowId = 'continue' | 'opponent' | 'ruleset' | 'length' | 'speed' | 'start' | 'pages';
 
@@ -143,11 +144,11 @@ export class MainMenuScene extends Phaser.Scene {
     if (saved) {
       const s = saved.state;
       const info = s.mode === 'full' ? `รอบ ${s.round}/${s.maxRounds}` : 'เกมสั้น';
-      const b = addPixelText(this, 470, L.titleY, `▶ เล่นต่อ (${info})`, {
-        size: 12,
+      const b = addPixelText(this, 470, L.continueY, `▶ เล่นต่อ (${info})`, {
+        size: TEXT_SIZE,
         color: CSS.pitShadow,
         background: CSS.gold,
-        padding: { x: 6, y: 3 },
+        padding: { x: 6, y: 0 },
       })
         .setOrigin(1, 0.5)
         .setInteractive({ useHandCursor: true })
@@ -167,7 +168,7 @@ export class MainMenuScene extends Phaser.Scene {
       this.ruleset = r;
       saveRuleset(reg, r);
     });
-    this.summary = addPixelText(this, L.dropdownX - L.dropdownW / 2 + 2, L.summaryY, '', { size: 12, color: CSS.gold }).setOrigin(0, 0.5);
+    this.summary = addPixelText(this, L.dropdownX - L.dropdownW / 2 + 2, L.summaryY, '', { size: TEXT_SIZE, color: CSS.gold }).setOrigin(0, 0.5);
 
     // ── Length ──
     this.dropdownRow('length', 'ความยาว:', L.lengthY, LENGTHS, lengthLabel, () => (this.mode === 'short' ? 'short' : this.rounds), (l) => {
@@ -187,7 +188,7 @@ export class MainMenuScene extends Phaser.Scene {
       color: CSS.pitShadow,
       bold: true,
       background: CSS.gold,
-      padding: { x: 8, y: 3 },
+      padding: { x: 8, y: 1 },
       fixedWidth: 160,
     })
       .setInteractive({ useHandCursor: true })
@@ -210,7 +211,7 @@ export class MainMenuScene extends Phaser.Scene {
     this.focusFrame = this.add.rectangle(0, 0, 10, 10).setStrokeStyle(2, COLORS.cream).setDepth(5);
     this.refreshAll();
 
-    this.text(width / 2, L.hintY, `↑ ↓ ← → เลือก · Enter / จอย A ตกลง · ปุ่มลัด 1–4${this.hasSave ? ' · C เล่นต่อ' : ''} · AI เล่นแถวบน`, 12, CSS.dim, false);
+    this.text(width / 2, L.hintY, `↑ ↓ ← → เลือก · Enter / จอย A ตกลง · ปุ่มลัด 1–4${this.hasSave ? ' · C เล่นต่อ' : ''}`, TEXT_SIZE, CSS.dim, false);
 
     // ── Keyboard & gamepad ──
     onKeyDown(this, 'UP', () => this.nav('up'));
@@ -311,7 +312,7 @@ export class MainMenuScene extends Phaser.Scene {
   }
 
   private rowLabel(x: number, y: number, label: string): void {
-    this.text(x, y, label, 12, CSS.dim).setOrigin(1, 0.5);
+    this.text(x, y, label, TEXT_SIZE, CSS.dim).setOrigin(1, 0.5);
   }
 
   private dropdownRow<T>(id: RowId, label: string, y: number, values: readonly T[], labelOf: (v: T) => string, get: () => T, set: (v: T) => void): void {

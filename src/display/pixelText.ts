@@ -1,18 +1,18 @@
 /**
- * All text in the game (GDD §10, owner's choice 2026-11-24): Chakra Petch drawn as crisp
+ * All text in the game (GDD §10, owner's choice 2026-11-24): Mali drawn as crisp
  * 1-bit pixels.
  *
  * The browser's canvas shapes Thai correctly (stacked vowels and tone marks), so the text
- * is drawn there at its real pixel size, then every pixel is made fully on or fully off
- * (binarize.ts). With the integer zoom this shows clean square pixels instead of the blurry
+ * is drawn there at its real pixel size, letter by letter on whole pixels, and then every
+ * pixel is made fully on or fully off (binarize.ts). With the integer zoom this shows clean square pixels instead of the blurry
  * grey edges Phaser's anti-aliased Text gets when scaled up.
  *
  * `PixelText` is an Image with the bits of the Phaser Text API this game uses (setText,
  * setColor, setBackgroundColor, `text`), so scenes treat it like text. Each distinct
  * text + style becomes one texture, made once and shared by every scene.
  *
- * Sizes: Thai text at least 12 px (10 px is hard to read); short Latin labels and digits
- * may be smaller. Use `outline` for text sitting on the wooden board.
+ * Sizes: Thai text at least TEXT_SIZE (13 px); short Latin labels and digits
+ * may be smaller (see digits()). Use `outline` for text sitting on the wooden board.
  */
 import Phaser from 'phaser';
 import { binarize, hexToRgb } from './binarize';
@@ -25,10 +25,12 @@ export interface PixelTextStyle {
   color: string;
   /** Bold from 14 px up; smaller text is always regular (see MIN_BOLD_SIZE). */
   bold?: boolean;
-  /** CSS font family stack (default: Chakra Petch, see palette FONT). */
+  /** CSS font family stack (default: Mali, see palette FONT). */
   family?: string;
-  /** Coverage needed to light a pixel, 0–1 (default 0.5). Lower = bolder. */
+  /** Coverage needed to light a pixel, 0–1 (default THRESHOLD). Lower = bolder. */
   threshold?: number;
+  /** Box only as tall as digits, so a number sits centred on its point (see DIGITS). */
+  tight?: boolean;
   /** '#RRGGBB' 1-pixel outline around the letters. */
   outline?: string;
   /** '#RRGGBB' fill for the whole box (buttons). */
@@ -43,9 +45,57 @@ export interface PixelTextStyle {
 /** Bold below this size fills the gaps inside Thai letters once it is 1-bit: use regular. */
 const MIN_BOLD_SIZE = 14;
 
+/** Size of all ordinary text. Smaller Thai letters lose their heads (GDD §10). */
+export const TEXT_SIZE = 13;
+
+/**
+ * Coverage that lights a pixel, chosen so the heads of Mali's letters stay open. Bold strokes
+ * need more. Measure with white text like renderLetters: black text comes out thinner.
+ */
+const THRESHOLD = { regular: 0.6, bold: 0.7 } as const;
+
+/** Style for a number on its own, centred on its point. At least 11 px. */
+export function digits(size: number, color: string, bold = false): PixelTextStyle {
+  return { size, color, bold, tight: true };
+}
+
+const isBold = (style: PixelTextStyle): boolean => style.bold === true && style.size >= MIN_BOLD_SIZE;
+
+function thresholdOf(style: PixelTextStyle): number {
+  return style.threshold ?? (isBold(style) ? THRESHOLD.bold : THRESHOLD.regular);
+}
+
 function cssFont(style: PixelTextStyle): string {
-  const weight = style.bold && style.size >= MIN_BOLD_SIZE ? 700 : 400;
+  const weight = isBold(style) ? 700 : 400;
   return `${weight} ${style.size}px ${style.family ?? FONT}`;
+}
+
+/**
+ * Text reaching as high and as low as Thai lines do: every line of one size gets this height,
+ * because the font's own line height leaves far more room than the small screen has.
+ */
+const TALLEST = 'ผู้ปั้นที่ญฎฐฤ';
+const DIGIT_HEIGHT = '0123456789P';
+
+/** Splits text into letters together with their vowels and tone marks (undefined: old browser). */
+const LETTERS = typeof Intl !== 'undefined' && 'Segmenter' in Intl ? new Intl.Segmenter('th', { granularity: 'grapheme' }) : undefined;
+
+/** At TEXT_SIZE these look alike; this far off the whole pixel each keeps its own head or tail. */
+const NUDGE: Readonly<Record<string, number>> = { ข: 0.4, ช: 0.2, ซ: 0.2 };
+
+/**
+ * Every letter starts on a whole pixel. Drawn as one line, the same letter falls on different
+ * fractions of a pixel and its 1-bit shape changes (ด could turn into ค).
+ */
+function placeLetters(ctx: CanvasRenderingContext2D, text: string, style: PixelTextStyle): { letters: { s: string; x: number }[]; width: number } {
+  const parts = LETTERS ? Array.from(LETTERS.segment(text), (p) => p.segment) : [text];
+  let x = 0;
+  const letters = parts.map((s) => {
+    const letter = { s, x: x + (style.size === TEXT_SIZE ? (NUDGE[s[0]] ?? 0) : 0) };
+    x += Math.round(ctx.measureText(s).width);
+    return letter;
+  });
+  return { letters, width: x };
 }
 
 /** The letters alone, 1-bit, with room for every mark above and below the line. */
@@ -56,21 +106,25 @@ function renderLetters(text: string, style: PixelTextStyle): HTMLCanvasElement {
   if (!ctx) throw new Error('pixelText: no 2D canvas');
   ctx.font = cssFont(style);
   const m = ctx.measureText(text);
-  // Font-wide ascent/descent keep every line of one size the same height (buttons in a
-  // row line up); the real extent wins when stacked marks reach further.
-  const ascent = Math.ceil(Math.max(m.actualBoundingBoxAscent, m.fontBoundingBoxAscent || 0));
-  const descent = Math.ceil(Math.max(m.actualBoundingBoxDescent, m.fontBoundingBoxDescent || 0));
+  const line = ctx.measureText(style.tight ? DIGIT_HEIGHT : TALLEST);
+  // The same height for every line of one size (buttons in a row line up); the real extent
+  // wins when stacked marks reach further.
+  const ascent = Math.ceil(Math.max(m.actualBoundingBoxAscent, line.actualBoundingBoxAscent));
+  const descent = Math.ceil(Math.max(m.actualBoundingBoxDescent, line.actualBoundingBoxDescent));
   const left = Math.max(0, Math.ceil(m.actualBoundingBoxLeft));
-  canvas.width = Math.max(1, Math.ceil(Math.max(m.width, m.actualBoundingBoxRight + left)) + left + pad * 2);
+  const { letters, width } = placeLetters(ctx, text, style);
+  // A last letter may reach past its own width.
+  const overhang = Math.max(0, Math.ceil(m.actualBoundingBoxRight - m.width));
+  canvas.width = Math.max(1, left + width + overhang + pad * 2);
   canvas.height = Math.max(1, ascent + descent + pad * 2);
 
   ctx.font = cssFont(style); // resizing the canvas resets the context
   ctx.fillStyle = '#fff';
   ctx.textBaseline = 'alphabetic';
-  ctx.fillText(text, pad + left, pad + ascent);
+  for (const l of letters) ctx.fillText(l.s, pad + left + l.x, pad + ascent);
   const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
   img.data.set(
-    binarize(img.data, canvas.width, canvas.height, style.threshold ?? 0.5, hexToRgb(style.color), style.outline ? hexToRgb(style.outline) : undefined),
+    binarize(img.data, canvas.width, canvas.height, thresholdOf(style), hexToRgb(style.color), style.outline ? hexToRgb(style.outline) : undefined),
   );
   ctx.putImageData(img, 0, 0);
   return canvas;
@@ -102,7 +156,8 @@ function styleKey(style: PixelTextStyle): string {
   return [
     cssFont(style),
     style.color,
-    style.threshold ?? 0.5,
+    thresholdOf(style),
+    style.tight ? 'tight' : '',
     style.outline ?? '',
     style.background ?? '',
     p ? `${p.x},${p.y}` : '',

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { COLORS, CSS } from '../display/palette';
-import { addPixelText, type PixelText } from '../display/pixelText';
+import { TEXT_SIZE, addPixelText, type PixelText } from '../display/pixelText';
 import { onKeyDown } from '../input/keys';
 import { onPadAction, onPadDisconnected } from '../input/gamepad';
 import { SceneKeys, type PauseSceneData } from '../types/scenes';
@@ -46,10 +46,10 @@ export class PauseScene extends Phaser.Scene {
 
     this.buttons = OPTIONS.map((opt, i) => {
       const b = addPixelText(this, PAUSE_LAYOUT.x, PAUSE_LAYOUT.firstY + i * PAUSE_LAYOUT.gapY, opt.label, {
-        size: 13,
+        size: TEXT_SIZE,
         color: CSS.cream,
         background: CSS.pitShadow,
-        padding: { x: 8, y: 3 },
+        padding: { x: 8, y: 0 },
         fixedWidth: 180,
       }).setInteractive({ useHandCursor: true });
       b.on('pointerover', () => this.setFocus(i));
@@ -59,7 +59,7 @@ export class PauseScene extends Phaser.Scene {
     this.refresh();
 
     this.notice = addPixelText(this, width / 2, 232, 'จอยหลุด: เชื่อมต่อจอยใหม่ หรือเล่นต่อด้วยเมาส์ / คีย์บอร์ด / การแตะ', {
-      size: 12,
+      size: TEXT_SIZE,
       color: CSS.cream,
       background: CSS.pitShadow,
       padding: { x: 6, y: 3 },

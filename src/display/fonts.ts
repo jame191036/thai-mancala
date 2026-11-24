@@ -1,15 +1,15 @@
 /**
- * The game's font (GDD §10, owner's choice 2026-11-24): Chakra Petch by Cadson Demak,
- * SIL Open Font License 1.1 (public/licenses/ChakraPetch-OFL.txt), via @fontsource.
+ * The game's font (GDD §10, owner's choice 2026-11-24): Mali by Cadson Demak,
+ * SIL Open Font License 1.1 (public/licenses/Mali-OFL.txt), via @fontsource.
  * Bundled with the game so every device shows the same letters. The Preloader waits
  * for it; pixelText.ts draws with it.
  */
-import thai400 from '@fontsource/chakra-petch/files/chakra-petch-thai-400-normal.woff2?url';
-import latin400 from '@fontsource/chakra-petch/files/chakra-petch-latin-400-normal.woff2?url';
-import thai700 from '@fontsource/chakra-petch/files/chakra-petch-thai-700-normal.woff2?url';
-import latin700 from '@fontsource/chakra-petch/files/chakra-petch-latin-700-normal.woff2?url';
+import thai400 from '@fontsource/mali/files/mali-thai-400-normal.woff2?url';
+import latin400 from '@fontsource/mali/files/mali-latin-400-normal.woff2?url';
+import thai700 from '@fontsource/mali/files/mali-thai-700-normal.woff2?url';
+import latin700 from '@fontsource/mali/files/mali-latin-700-normal.woff2?url';
 
-export const FONT_FAMILY = 'Chakra Petch';
+export const FONT_FAMILY = 'Mali';
 
 const THAI_RANGE = 'U+0E01-0E5B, U+200C-200D, U+25CC';
 const LATIN_RANGE = 'U+0000-00FF, U+2000-206F, U+2190-2193, U+2212';

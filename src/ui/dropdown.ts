@@ -8,7 +8,7 @@
  */
 import type Phaser from 'phaser';
 import { COLORS, CSS } from '../display/palette';
-import { addPixelText, type PixelText } from '../display/pixelText';
+import { TEXT_SIZE, addPixelText, type PixelText } from '../display/pixelText';
 import type { PadAction } from '../input/gamepad';
 
 export interface DropdownConfig<T> {
@@ -22,7 +22,7 @@ export interface DropdownConfig<T> {
 }
 
 /** Height of one row of the open list (base px); the first row is centred at y + ROW_H. */
-export const DROPDOWN_ROW_H = 20;
+export const DROPDOWN_ROW_H = 24;
 const DEPTH = 30;
 
 export class Dropdown<T> {
@@ -37,10 +37,10 @@ export class Dropdown<T> {
     private readonly cfg: DropdownConfig<T>,
   ) {
     this.box = addPixelText(scene, cfg.x, cfg.y, '', {
-      size: 12,
+      size: TEXT_SIZE,
       color: CSS.cream,
       background: CSS.woodDark,
-      padding: { x: 6, y: 2 },
+      padding: { x: 6, y: 0 },
       fixedWidth: cfg.width,
       align: 'left',
     }).setInteractive({ useHandCursor: true });
@@ -79,10 +79,10 @@ export class Dropdown<T> {
     this.highlight = Math.max(0, values.indexOf(this.cfg.get()));
     this.rows = values.map((v, i) => {
       const row = addPixelText(this.scene, x, y + (i + 1) * DROPDOWN_ROW_H, labelOf(v), {
-        size: 12,
+        size: TEXT_SIZE,
         color: CSS.cream,
         background: CSS.pitShadow,
-        padding: { x: 6, y: 2 },
+        padding: { x: 6, y: 0 },
         fixedWidth: width,
         align: 'left',
       })

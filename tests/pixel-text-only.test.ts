@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-// GDD §10 (owner's choice 2026-11-24): every text is PixelText (Chakra Petch as 1-bit
+// GDD §10 (owner's choice 2026-11-24): every text is PixelText (Mali as 1-bit
 // pixels). Phaser's own Text is anti-aliased and looks blurry at the integer zoom, so it
 // must not creep back in.
 const sources = import.meta.glob(['../src/**/*.ts'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>;

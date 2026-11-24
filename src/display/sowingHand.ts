@@ -8,7 +8,7 @@ import Phaser from 'phaser';
 import type { PitIndex, Player } from '../logic/types';
 import { handPosition, slotPosition, type Point } from './boardLayout';
 import { COLORS, CSS } from './palette';
-import { addPixelText, type PixelText } from './pixelText';
+import { TEXT_SIZE, addPixelText, digits, type PixelText } from './pixelText';
 
 export const HAND_TEXTURE = 'hand';
 /** hand.png: 32×40 frames, P1 open / carry / drop, then P2 open / carry / drop. */
@@ -47,12 +47,12 @@ export class SowingHand {
   ) {
     if (picture) {
       this.sprite = scene.add.image(0, 0, HAND_TEXTURE, 0);
-      this.label = addPixelText(scene, 0, 0, '', { size: 12, color: CSS.cream, outline: CSS.textEdge });
+      this.label = addPixelText(scene, 0, 0, '', { ...digits(TEXT_SIZE, CSS.cream), outline: CSS.textEdge });
       this.body = scene.add.container(0, 0, [this.sprite, this.label]);
     } else {
       this.sprite = null;
       const circle = scene.add.circle(0, 0, 8, COLORS.gold).setStrokeStyle(1, COLORS.woodDark);
-      this.label = addPixelText(scene, 0, 0, '', { size: 10, color: CSS.pitShadow, bold: true });
+      this.label = addPixelText(scene, 0, 0, '', digits(11, CSS.pitShadow));
       this.body = scene.add.container(0, 0, [circle, this.label]);
     }
     this.body.setDepth(10).setVisible(false);

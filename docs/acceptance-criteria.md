@@ -103,9 +103,10 @@
 - [ ] Tutorial ทั้ง 5 ขั้นเล่นจบได้ และแต่ละขั้นผ่านได้ด้วยการเดินที่ถูกต้องเท่านั้น
 
 - [x] ตัวอักษรไทยแบบพิกเซล (GDD §10)
-  - ทุกข้อความใช้ Chakra Petch แบบ 1 บิต ไม่เหลือ Phaser `Text` (`tests/pixel-text-only.test.ts`)
+  - ทุกข้อความใช้ Mali แบบ 1 บิต ไม่เหลือ Phaser `Text` (`tests/pixel-text-only.test.ts`)
   - ฟอนต์โหลดได้บน production build ที่มี CSP (`scale.mjs`)
-  - ข้อความไทยมีขนาดอย่างน้อย 12 px
+  - ข้อความไทยมีขนาดอย่างน้อย 13 px
+  - ไม่มีข้อความทับกันหรือล้นจอในทุกหน้า (`layout.mjs`)
 
 ## Human review required (ทดสอบอัตโนมัติไม่ได้)
 

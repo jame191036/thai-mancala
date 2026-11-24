@@ -5,10 +5,9 @@
  */
 import type Phaser from 'phaser';
 import { COLORS, CSS } from '../display/palette';
-import { PixelText, addPixelText } from '../display/pixelText';
+import { TEXT_SIZE, addPixelText, type PixelText } from '../display/pixelText';
 
-/** Smallest size for Thai text (GDD §10: 10 px is hard to read). */
-export const TEXT_SIZE = 12;
+export { TEXT_SIZE };
 
 export function addText(scene: Phaser.Scene, x: number, y: number, text: string, size: number, color: string, bold = true): PixelText {
   return addPixelText(scene, x, y, text, { size, color, bold });
@@ -27,7 +26,7 @@ export function addButton(scene: Phaser.Scene, x: number, y: number, label: stri
     color: CSS.cream,
     bold: true,
     background: CSS.woodDark,
-    padding: { x: 6, y: 2 },
+    padding: { x: 6, y: 0 },
     fixedWidth: opts.width,
   }).setInteractive({ useHandCursor: true });
   if (opts.onClick) b.on('pointerdown', opts.onClick);

@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { COLORS, CSS } from '../display/palette';
 import { REDUCED_MOTION, loadFlag } from '../settings';
 import { SceneKeys } from '../types/scenes';
-import { addText } from '../ui/widgets';
+import { TEXT_SIZE, addText } from '../ui/widgets';
 
 /** Mini row drawn under the logo: 7 pits and a store (base px). */
 const PIT_XS = [150, 180, 210, 240, 270, 300, 330];
@@ -27,15 +27,15 @@ export class TitleScene extends Phaser.Scene {
     const { width } = this.scale;
     const still = loadFlag(this.registry, REDUCED_MOTION);
 
-    addText(this, width / 2, 78, 'หมากขุม', 44, CSS.gold);
-    addText(this, width / 2, 116, 'การละเล่นพื้นบ้านไทย · 2 คน หรือเล่นกับ AI', 12, CSS.cream, false);
+    addText(this, width / 2, 62, 'หมากขุม', 44, CSS.gold);
+    addText(this, width / 2, 116, 'การละเล่นพื้นบ้านไทย · 2 คน หรือเล่นกับ AI', TEXT_SIZE, CSS.cream, false);
 
     for (const x of PIT_XS) this.add.circle(x, ROW_Y, 9, COLORS.pitShadow).setStrokeStyle(1, COLORS.woodLight);
     this.add.rectangle(STORE_X, ROW_Y, 22, 30, COLORS.pitShadow).setStrokeStyle(2, COLORS.p1);
     const seed = this.add.circle(PIT_XS[0], ROW_Y, 3, COLORS.seedLight).setStrokeStyle(1, COLORS.gold);
     if (!still) this.hopSeeds(seed);
 
-    const prompt = addText(this, width / 2, 222, 'แตะ / คลิก / กดปุ่มใดก็ได้เพื่อเริ่ม', 12, CSS.cream);
+    const prompt = addText(this, width / 2, 222, 'แตะ / คลิก / กดปุ่มใดก็ได้เพื่อเริ่ม', TEXT_SIZE, CSS.cream);
     if (!still) this.tweens.add({ targets: prompt, alpha: 0.35, duration: 700, yoyo: true, repeat: -1 });
 
     // Any pointer, key or gamepad button. A pad that only now becomes visible to the

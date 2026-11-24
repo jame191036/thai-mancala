@@ -7,7 +7,7 @@ import { SowingHand, type HandPose } from '../display/sowingHand';
 import { seedSpots } from '../display/seedLayout';
 import { FLYING_FRAME, SEEDS_TEXTURE, SEED_ORIGIN, SeedPiles } from '../display/seedPiles';
 import { COLORS, CSS, PLAYER_COLOR, PLAYER_CSS } from '../display/palette';
-import { addPixelText, type PixelText } from '../display/pixelText';
+import { TEXT_SIZE, addPixelText, digits, type PixelText } from '../display/pixelText';
 import {
   AI_PLAYER,
   RULESET_NAME,
@@ -333,8 +333,8 @@ export class GameScene extends Phaser.Scene {
         const shape = this.add.circle(x, y, LAYOUT.store.radius).setStrokeStyle(1, PLAYER_COLOR[owner]);
         const beside = countPosition(i);
         const count = this.boardStyle === 'numbers' ? { x, y } : beside;
-        const label = this.label(count.x, count.y, '0', 18, CSS.cream, true).setOrigin(0.5);
-        const tag = this.label(beside.x - 26, beside.y, owner === 0 ? 'P1' : 'P2', 10, PLAYER_CSS[owner]).setOrigin(0.5);
+        const label = this.number(count.x, count.y, '0', 18, CSS.cream, true);
+        const tag = this.number(beside.x - 26, beside.y, owner === 0 ? 'P1' : 'P2', 11, PLAYER_CSS[owner]);
         if (this.facing && owner === 1) {
           tag.setRotation(Math.PI);
           label.setRotation(Math.PI);
@@ -346,7 +346,7 @@ export class GameScene extends Phaser.Scene {
       const shape = this.add.circle(x, y, LAYOUT.pitRadius);
       const numbers = this.boardStyle === 'numbers';
       const count = numbers ? { x, y } : countPosition(i);
-      const label = this.label(count.x, count.y, '0', numbers ? 16 : 12, CSS.cream, true).setOrigin(0.5);
+      const label = this.number(count.x, count.y, '0', numbers ? 16 : TEXT_SIZE, CSS.cream, true);
       // "หันหน้าเข้าหากัน": the person across the table reads P2's numbers the right way up.
       if (this.facing && i > P1_STORE) label.setRotation(Math.PI);
       this.slots[i] = { shape, label };
@@ -367,19 +367,19 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createHud(): void {
-    this.p2Label = this.label(12, 14, '', 12, CSS.dim, true).setOrigin(0, 0.5);
+    this.p2Label = this.label(12, 14, '', TEXT_SIZE, CSS.dim, true).setOrigin(0, 0.5);
     // Upside down, the text must grow to the right of x from its other end.
     if (this.facing) this.p2Label.setOrigin(1, 0.5).setRotation(Math.PI);
-    this.roundLabel = this.label(240, 14, '', 12, CSS.dim).setOrigin(0.5);
-    this.speedButton = this.label(468, 14, '', 12, CSS.gold, true)
+    this.roundLabel = this.label(240, 14, '', TEXT_SIZE, CSS.dim).setOrigin(0.5);
+    this.speedButton = this.label(468, 14, '', TEXT_SIZE, CSS.gold, true)
       .setOrigin(1, 0.5)
       .setInteractive({ useHandCursor: true });
     this.speedButton.on('pointerdown', () => this.cycleSpeed());
 
     this.banner = this.label(240, 45, '', 14, CSS.gold, true).setOrigin(0.5).setAlpha(0);
-    this.p1Label = this.label(12, 236, '', 12, CSS.dim, true).setOrigin(0, 0.5);
-    this.messageLabel = this.label(240, 256, '', 12, CSS.cream).setOrigin(0.5);
-    this.pauseButton = this.label(468, 236, '≡ พักเกม', 12, CSS.gold, true)
+    this.p1Label = this.label(12, 231, '', TEXT_SIZE, CSS.dim, true).setOrigin(0, 0.5);
+    this.messageLabel = this.label(240, 257, '', TEXT_SIZE, CSS.cream).setOrigin(0.5);
+    this.pauseButton = this.label(468, 231, '≡ พักเกม', TEXT_SIZE, CSS.gold, true)
       .setOrigin(1, 0.5)
       .setInteractive({ useHandCursor: true });
     this.pauseButton.on('pointerdown', () => this.openPause());
@@ -762,7 +762,7 @@ export class GameScene extends Phaser.Scene {
     const label = (p: Player) => `${active === p ? '▶ ' : ''}${this.names[p]}`;
     this.p1Label.setText(`${label(0)}  (แถวล่าง)`).setColor(active === 0 ? PLAYER_CSS[0] : CSS.dim);
     this.p2Label.setText(`${label(1)}  (แถวบน)`).setColor(active === 1 ? PLAYER_CSS[1] : CSS.dim);
-    const mode = s.mode === 'full' ? `เกมเต็ม · รอบ ${s.round}/${s.maxRounds}` : 'เกมสั้น';
+    const mode = s.mode === 'full' ? `รอบ ${s.round}/${s.maxRounds}` : 'เกมสั้น';
     this.roundLabel.setText(`${mode} · ${RULESET_NAME[s.ruleset]}`);
     this.speedButton.setText(this.speedText());
     this.messageLabel.setText(
@@ -870,7 +870,7 @@ export class GameScene extends Phaser.Scene {
       this.boardStyle === 'numbers'
         ? [
             this.add.circle(0, 0, 10, COLORS.seedLight).setStrokeStyle(1, COLORS.gold),
-            this.label(0, 0, String(count), 10, CSS.cream, true).setOrigin(0.5),
+            this.number(0, 0, String(count), 11, CSS.cream),
           ]
         : seedSpots(from)
             .slice(0, count)
@@ -910,5 +910,10 @@ export class GameScene extends Phaser.Scene {
    */
   private label(x: number, y: number, text: string, size: number, color: string, bold = false): PixelText {
     return addPixelText(this, x, y, text, { size, color, bold, outline: CSS.textEdge });
+  }
+
+  /** A number (or P1 / P2) centred on its point. */
+  private number(x: number, y: number, text: string, size: number, color: string, bold = false): PixelText {
+    return addPixelText(this, x, y, text, { ...digits(size, color, bold), outline: CSS.textEdge });
   }
 }

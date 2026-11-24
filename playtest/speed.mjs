@@ -10,7 +10,7 @@ const GS = `scene('GameScene')`;
 export default [
   reachMenu,
   { name: 'default speed is ปกติ', action: 'expect', expect: { expression: `scene('MainMenuScene').speed`, equals: 1 } },
-  { name: 'click "ช้ามาก"', action: 'click', x: 2 * 148, y: 2 * 158 },
+  { name: 'click "ช้ามาก"', action: 'click', x: 2 * 143, y: 2 * 158 },
   { name: 'menu speed is ช้ามาก', action: 'expect', expect: { expression: `scene('MainMenuScene').speed`, equals: 0.25 } },
   { name: 'menu-speed', action: 'screenshot' },
   { name: 'Space starts a game', action: 'press', key: 'Space' },

@@ -3,33 +3,33 @@ import { reachMenu } from './lib/common.mjs';
 // into the game and into a rematch; while a round is running neither side is ever empty.
 //
 // Menu (base px, see MENU_LAYOUT in src/scenes/MainMenuScene.ts): ruleset dropdown at
-// (218, 86), its 2nd option at y 86 + 2 × 20; "เริ่มเกม" at (240, 192). Clicks are ×2 (k = 2).
+// (218, 82), its 2nd option at y 82 + 2 × 24; "เริ่มเกม" at (240, 191). Clicks are ×2 (k = 2).
 const GS = `scene('GameScene')`;
 
 export default [
   reachMenu,
   { name: 'menu', action: 'screenshot' },
   // Closing without choosing: Esc, or a click outside the list.
-  { name: 'open the ruleset list, then Esc', action: 'click', x: 2 * 218, y: 2 * 86 },
+  { name: 'open the ruleset list, then Esc', action: 'click', x: 2 * 218, y: 2 * 82 },
   { name: 'list opened', action: 'waitFor', expression: `scene('MainMenuScene').dropdownOpen`, timeout: 1000 },
   { name: '↓ highlights the other ruleset', action: 'press', key: 'ArrowDown' },
   { name: 'Esc closes the list', action: 'press', key: 'Escape' },
   { name: 'nothing chosen', action: 'expect', expect: { expression: `[scene('MainMenuScene').ruleset, scene('MainMenuScene').dropdownOpen]`, equals: ['traditional', false] } },
-  { name: 'open the ruleset list again', action: 'click', x: 2 * 218, y: 2 * 86 },
+  { name: 'open the ruleset list again', action: 'click', x: 2 * 218, y: 2 * 82 },
   { name: 'list opened again', action: 'waitFor', expression: `scene('MainMenuScene').dropdownOpen`, timeout: 1000 },
   { name: 'let the list settle first', action: 'wait', ms: 100 },
-  { name: 'click outside, on the "AI ยาก" button', action: 'click', x: 2 * 360, y: 2 * 56 },
+  { name: 'click outside, on the "AI ยาก" button', action: 'click', x: 2 * 360, y: 2 * 54 },
   {
     name: 'the click only closed the list (no ruleset or opponent change)',
     action: 'expect',
     expect: { expression: `[scene('MainMenuScene').ruleset, scene('MainMenuScene').opponent, scene('MainMenuScene').dropdownOpen]`, equals: ['traditional', 'human', false] },
   },
-  { name: 'open the ruleset dropdown', action: 'click', x: 2 * 218, y: 2 * 86 },
+  { name: 'open the ruleset dropdown', action: 'click', x: 2 * 218, y: 2 * 82 },
   { name: 'the list is open', action: 'expect', expect: { expression: `scene('MainMenuScene').dropdownOpen`, equals: true } },
   // Objects made during a click only take input from the next frame on: wait a moment.
   { name: 'let the list settle', action: 'wait', ms: 100 },
   { name: 'menu-ruleset-dropdown', action: 'screenshot' },
-  { name: 'pick "แบบตามวิดีโอ"', action: 'click', x: 2 * 218, y: 2 * 126 },
+  { name: 'pick "แบบตามวิดีโอ"', action: 'click', x: 2 * 218, y: 2 * 130 },
   { name: 'video rules chosen, list closed', action: 'expect', expect: { expression: `[scene('MainMenuScene').ruleset, scene('MainMenuScene').dropdownOpen]`, equals: ['video', false] } },
   { name: 'a mouse pick leaves the focus on "เริ่มเกม"', action: 'expect', expect: { expression: `scene('MainMenuScene').focusRow`, equals: 'start' } },
   { name: 'so Enter starts the game', action: 'press', key: 'Enter' },

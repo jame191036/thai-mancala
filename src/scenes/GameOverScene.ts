@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { CSS, PLAYER_CSS } from '../display/palette';
-import { addPixelText, type PixelText } from '../display/pixelText';
+import { TEXT_SIZE, addPixelText, type PixelText } from '../display/pixelText';
 import { onKeyDown } from '../input/keys';
 import { onPadAction } from '../input/gamepad';
 import {
@@ -47,22 +47,22 @@ export class GameOverScene extends Phaser.Scene {
       addPixelText(this, width / 2, y, s, { size, color, bold });
 
     const title = data.winner === null ? 'เสมอ!' : `${names[data.winner]} ชนะ!`;
-    text(54, title, 32, data.winner === null ? CSS.gold : PLAYER_CSS[data.winner]);
-    text(96, `${names[0]}  ${data.stores[0]} : ${data.stores[1]}  ${names[1]}`, 16, CSS.cream);
-    text(122, reasonText(data, names), 12, CSS.dim, false);
-    text(140, `${RULESET_NAME[data.ruleset]}: ${RULESET_SUMMARY[data.ruleset]}`, 12, CSS.dim, false);
+    text(36, title, 32, data.winner === null ? CSS.gold : PLAYER_CSS[data.winner]);
+    text(80, `${names[0]}  ${data.stores[0]} : ${data.stores[1]}  ${names[1]}`, 16, CSS.cream);
+    text(110, reasonText(data, names), TEXT_SIZE, CSS.dim, false);
+    text(135, `${RULESET_NAME[data.ruleset]}: ${RULESET_SUMMARY[data.ruleset]}`, TEXT_SIZE, CSS.dim, false);
 
     // This game's records (GDD §7 Result). The video rules have no relays (R17).
     const r = data.records;
-    text(164, `กินมากสุดในครั้งเดียว   ${names[0]}: ${r.maxCapture[0]} เม็ด  ·  ${names[1]}: ${r.maxCapture[1]} เม็ด`, 12, CSS.cream, false);
+    text(160, `กินมากสุดในครั้งเดียว   ${names[0]}: ${r.maxCapture[0]} เม็ด  ·  ${names[1]}: ${r.maxCapture[1]} เม็ด`, TEXT_SIZE, CSS.cream, false);
     if (data.ruleset === 'traditional') {
-      text(181, `หว่านต่อยาวสุด   ${names[0]}: ${r.maxRelay[0]} ทอด  ·  ${names[1]}: ${r.maxRelay[1]} ทอด`, 12, CSS.cream, false);
+      text(183, `หว่านต่อยาวสุด   ${names[0]}: ${r.maxRelay[0]} ทอด  ·  ${names[1]}: ${r.maxRelay[1]} ทอด`, TEXT_SIZE, CSS.cream, false);
     }
 
     this.button('rematch', GAME_OVER_LAYOUT.rematchX, 'เล่นอีกครั้ง');
     this.button('menu', GAME_OVER_LAYOUT.menuX, 'เมนู');
     this.refresh();
-    text(250, '← → เลือก  ·  Enter / จอย A ตกลง  ·  Esc / จอย B = เมนู', 12, CSS.dim, false);
+    text(250, '← → เลือก  ·  Enter / จอย A ตกลง  ·  Esc / จอย B = เมนู', TEXT_SIZE, CSS.dim, false);
 
     const move = (dir: -1 | 1) => {
       const i = CHOICES.indexOf(this.focus);
@@ -104,7 +104,7 @@ export class GameOverScene extends Phaser.Scene {
       color: CSS.cream,
       bold: true,
       background: CSS.woodDark,
-      padding: { x: 12, y: 4 },
+      padding: { x: 12, y: 1 },
     }).setInteractive({ useHandCursor: true });
     b.on('pointerover', () => this.setFocus(choice));
     b.on('pointerdown', () => this.choose(choice));

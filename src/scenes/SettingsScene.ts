@@ -18,7 +18,7 @@ import {
 } from '../settings';
 import { SceneKeys, type MainMenuData } from '../types/scenes';
 import type { PixelText } from '../display/pixelText';
-import { addButton, addText, createFocusFrame, frameAround, paintButton } from '../ui/widgets';
+import { TEXT_SIZE, addButton, addText, createFocusFrame, frameAround, paintButton } from '../ui/widgets';
 
 export type SettingId = 'touch' | 'motion' | 'vibration' | 'facing' | 'style';
 
@@ -40,9 +40,9 @@ export const SETTINGS_LAYOUT = {
   optionX: { 2: [282, 384], 3: [265, 333, 401] },
   optionW: { 2: 96, 3: 62 },
   labelX: 226,
-  firstY: 46,
-  gapY: 26,
-  backY: 186,
+  firstY: 48,
+  gapY: 29,
+  backY: 196,
 } as const;
 
 /**
@@ -106,11 +106,11 @@ export class SettingsScene extends Phaser.Scene {
       },
     ];
 
-    addText(this, width / 2, 20, 'ตั้งค่า', 18, CSS.gold);
+    addText(this, width / 2, 18, 'ตั้งค่า', 18, CSS.gold);
     this.rows = defs.map((def, r) => {
       const y = SETTINGS_LAYOUT.firstY + r * SETTINGS_LAYOUT.gapY;
       const count = def.options.length === 3 ? 3 : 2;
-      addText(this, SETTINGS_LAYOUT.labelX, y, def.label, 12, CSS.cream).setOrigin(1, 0.5);
+      addText(this, SETTINGS_LAYOUT.labelX, y, def.label, TEXT_SIZE, CSS.cream).setOrigin(1, 0.5);
       const row: SettingRow = { ...def, items: [] };
       row.items = def.options.map((label, i) =>
         addButton(this, SETTINGS_LAYOUT.optionX[count][i], y, label, {
@@ -129,9 +129,8 @@ export class SettingsScene extends Phaser.Scene {
       onHover: () => this.setFocus(this.rows.length),
     });
 
-    addText(this, width / 2, 212, 'ความเร็วหว่านและจำนวนรอบอยู่ที่เมนูหลัก · ตั้งค่าเสียงมาพร้อมงานเสียง', 12, CSS.dim, false);
-    this.help = addText(this, width / 2, 232, '', 12, CSS.cream, false);
-    addText(this, width / 2, 256, '↑ ↓ เลือก · ← → / Enter เปลี่ยน · Esc / จอย B กลับ', 12, CSS.dim, false);
+    this.help = addText(this, width / 2, 226, '', TEXT_SIZE, CSS.cream, false);
+    addText(this, width / 2, 256, '↑ ↓ เลือก · ← → / Enter เปลี่ยน · Esc / จอย B กลับ', TEXT_SIZE, CSS.dim, false);
     this.frame = createFocusFrame(this);
     this.refresh();
 
@@ -187,7 +186,7 @@ export class SettingsScene extends Phaser.Scene {
     paintButton(this.back, false);
     const row = this.rows[this.focus] as SettingRow | undefined;
     frameAround(this.frame, row ? row.items[row.get()] : this.back);
-    this.help.setText(row ? row.help : 'กลับไปเมนูหลัก');
+    this.help.setText(row ? row.help : 'กลับไปเมนูหลัก (ความเร็วหว่านและจำนวนรอบเลือกได้ที่นั่น)');
   }
 
   private leave(): void {
