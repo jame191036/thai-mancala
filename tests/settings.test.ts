@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type Phaser from 'phaser';
 import {
+  BOARD_STYLES,
   DEFAULT_SOW_SPEED,
   FACING,
   REDUCED_MOTION,
@@ -11,6 +12,7 @@ import {
   loadGameMode,
   loadOpponent,
   loadRuleset,
+  loadBoardStyle,
   loadSowSpeed,
   loadTouchConfirm,
   nextSowSpeed,
@@ -19,6 +21,7 @@ import {
   parseGameMode,
   parseOpponent,
   parseRuleset,
+  parseBoardStyle,
   parseSowSpeed,
   parseTouchConfirm,
   saveFlag,
@@ -26,6 +29,7 @@ import {
   saveGameMode,
   saveOpponent,
   saveRuleset,
+  saveBoardStyle,
   saveSowSpeed,
   saveTouchConfirm,
 } from '../src/settings';
@@ -131,6 +135,17 @@ describe('settings screen options', () => {
     expect(loadTouchConfirm(registry)).toBe('double');
     saveTouchConfirm(registry, 'single');
     expect(loadTouchConfirm(registry)).toBe('single');
+  });
+
+  it('board style: marbles, hand or numbers; anything else is marbles', () => {
+    expect(['marbles', 'hand', 'numbers'].map(parseBoardStyle)).toEqual(['marbles', 'hand', 'numbers']);
+    expect(['beans', 1, undefined].map(parseBoardStyle)).toEqual(['marbles', 'marbles', 'marbles']);
+    const registry = fakeRegistry();
+    expect(loadBoardStyle(registry)).toBe('marbles');
+    for (const style of BOARD_STYLES) {
+      saveBoardStyle(registry, style);
+      expect(loadBoardStyle(registry)).toBe(style);
+    }
   });
 
   it('on/off settings: defaults, and only real booleans are accepted', () => {

@@ -147,6 +147,29 @@ export function saveTouchConfirm(registry: Phaser.Data.DataManager, value: Touch
   save(registry, 'touchConfirm', value);
 }
 
+/**
+ * How the game looks (owner, 2026-11-24):
+ *  - marbles: marbles in the bowls, a circle with the number carries them
+ *  - hand: marbles in the bowls, a picture of a hand carries them
+ *  - numbers: numbers in the bowls, a circle with the number
+ */
+export const BOARD_STYLES = ['marbles', 'hand', 'numbers'] as const;
+export type BoardStyle = (typeof BOARD_STYLES)[number];
+
+export const BOARD_STYLE_LABEL: Record<BoardStyle, string> = { marbles: 'เม็ด', hand: 'มือ', numbers: 'ตัวเลข' };
+
+export function parseBoardStyle(raw: unknown): BoardStyle {
+  return (BOARD_STYLES as readonly unknown[]).includes(raw) ? (raw as BoardStyle) : 'marbles';
+}
+
+export function loadBoardStyle(registry: Phaser.Data.DataManager): BoardStyle {
+  return load(registry, 'boardStyle', parseBoardStyle);
+}
+
+export function saveBoardStyle(registry: Phaser.Data.DataManager, style: BoardStyle): void {
+  save(registry, 'boardStyle', style);
+}
+
 /** On/off settings. `fallback` is used when nothing valid is stored. */
 export interface Flag {
   key: string;

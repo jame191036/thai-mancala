@@ -25,6 +25,8 @@ export const CSS = {
   p1: '#3FA7B5',
   p2: '#E07A3A',
   dead: '#8C2F39',
+  /** 1-pixel edge around text lying on the bamboo or the board. */
+  textEdge: '#140E0A',
 } as const;
 
 /** Index by Player (0 = P1 bottom, 1 = P2 top). */

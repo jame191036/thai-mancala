@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { loadGameFont } from '../display/fonts';
+import { HAND_FRAME, HAND_TEXTURE } from '../display/sowingHand';
 import { SceneKeys } from '../types/scenes';
 
 /** Loads every asset with a progress bar (and the game font), then shows the title screen. */
@@ -18,8 +19,10 @@ export class PreloaderScene extends Phaser.Scene {
     });
 
     // Pixel art, drawn by tools/art/ (GDD §8).
+    this.load.image('bamboo', 'assets/bamboo.png');
     this.load.image('board', 'assets/board.png');
     this.load.spritesheet('seeds', 'assets/seeds.png', { frameWidth: 8, frameHeight: 8 });
+    this.load.spritesheet(HAND_TEXTURE, 'assets/hand.png', { frameWidth: HAND_FRAME.width, frameHeight: HAND_FRAME.height });
   }
 
   create(): void {

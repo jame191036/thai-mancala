@@ -2,15 +2,15 @@
 // Credits → back), settings that survive a reload and reach the game, and statistics
 // counting a finished game. Clicks are base px × 2 (k = 2).
 //   Main menu bottom row: ตั้งค่า (176, 230) · สถิติ (240, 230) · เครดิต (304, 230)
-//   Settings: rows at y 58 / 88 / 118 / 148, options at x 282 / 384, "กลับ" at (240, 186)
+//   Settings: rows at y 46 / 72 / 98 / 124 / 150, options at x 282 / 384 (the last row: 265 / 333 / 401), "กลับ" at (240, 186)
 import { TO_MENU } from './lib/common.mjs';
 
 const MM = `scene('MainMenuScene')`;
 const SET = `scene('SettingsScene')`;
 const ST = `scene('StatsScene')`;
 const GS = `scene('GameScene')`;
-const DEFAULTS = { touch: 'แตะ 2 ครั้ง', motion: 'ปิด', vibration: 'เปิด', facing: 'ปิด' };
-const CHOSEN = { touch: 'แตะครั้งเดียว', motion: 'เปิด', vibration: 'ปิด', facing: 'เปิด' };
+const DEFAULTS = { touch: 'แตะ 2 ครั้ง', motion: 'ปิด', vibration: 'เปิด', facing: 'ปิด', style: 'เม็ด' };
+const CHOSEN = { touch: 'แตะครั้งเดียว', motion: 'เปิด', vibration: 'ปิด', facing: 'เปิด', style: 'ตัวเลข' };
 const GAMES = `(() => { const r = ${ST}.stats.results; return Object.values(r).reduce((n, m) => n + Object.values(m).reduce((k, t) => k + t.p1 + t.p2 + t.draw, 0), 0); })()`;
 
 let n = 0;
@@ -45,12 +45,16 @@ export default [
   { name: 'Enter toggles reduced motion on', action: 'press', key: 'Enter' },
   ...keys('ArrowDown', 1),
   { name: '→ : vibration off', action: 'press', key: 'ArrowRight' },
-  { name: 'click "เปิด" on the facing row', action: 'click', x: 2 * 384, y: 2 * 148 },
-  { name: 'all four changed', action: 'expect', expect: { expression: `${SET}.values()`, equals: CHOSEN } },
+  { name: 'click "เปิด" on the facing row', action: 'click', x: 2 * 384, y: 2 * 124 },
   { name: 'the click moved the focus to its row', action: 'expect', expect: { expression: `${SET}.focus`, equals: 3 } },
+  ...keys('ArrowDown', 1),
+  { name: '→ : hand', action: 'press', key: 'ArrowRight' },
+  { name: 'hand chosen', action: 'expect', expect: { expression: `${SET}.values().style`, equals: 'มือ' } },
+  { name: '→ → : numbers', action: 'press', key: 'ArrowRight' },
+  { name: 'all five changed', action: 'expect', expect: { expression: `${SET}.values()`, equals: CHOSEN } },
   { name: 'settings-changed', action: 'screenshot' },
   ...keys('ArrowDown', 1),
-  { name: 'focus on "กลับ"', action: 'expect', expect: { expression: `${SET}.focus`, equals: 4 } },
+  { name: 'focus on "กลับ"', action: 'expect', expect: { expression: `${SET}.focus`, equals: 5 } },
   { name: 'Enter = back', action: 'press', key: 'Enter' },
   { name: 'menu, focus back on "ตั้งค่า"', action: 'waitFor', expression: `game.scene.isActive('MainMenuScene') && ${MM}.focusRow === 'pages' && ${MM}.focusCol === 0`, timeout: 3000 },
 
@@ -116,9 +120,17 @@ export default [
   { name: 'key 1 = two-player short game', action: 'press', key: '1' },
   { name: 'game', action: 'waitFor', expression: `game.scene.isActive('GameScene') && !game.scene.isActive('MainMenuScene')`, timeout: 5000 },
   {
-    name: 'one tap, reduced motion, no vibration, P2 upside down',
+    name: 'one tap, reduced motion, no vibration, P2 upside down, seeds as numbers',
     action: 'expect',
-    expect: { expression: `[${GS}.touchConfirm, ${GS}.reducedMotion, ${GS}.vibration, ${GS}.facing, ${GS}.p2UpsideDown]`, equals: [false, true, false, true, true] },
+    expect: { expression: `[${GS}.touchConfirm, ${GS}.reducedMotion, ${GS}.vibration, ${GS}.facing, ${GS}.p2UpsideDown, ${GS}.boardStyle]`, equals: [false, true, false, true, true, 'numbers'] },
+  },
+  {
+    name: 'seeds as numbers: no marbles, every count inside its bowl',
+    action: 'expect',
+    expect: {
+      expression: `[${GS}.displayedSeeds().reduce((a, b) => a + b, 0), ${GS}.displayedPits(), ${GS}.countsInBowls()]`,
+      equals: [0, [7, 7, 7, 7, 7, 7, 7, 0, 7, 7, 7, 7, 7, 7, 7, 0], true],
+    },
   },
   {
     name: 'play to the end (reduced motion = instant)',

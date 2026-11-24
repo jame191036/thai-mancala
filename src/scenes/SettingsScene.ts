@@ -3,11 +3,15 @@ import { CSS } from '../display/palette';
 import { onKeyDown } from '../input/keys';
 import { onPadAction, type PadAction } from '../input/gamepad';
 import {
+  BOARD_STYLES,
+  BOARD_STYLE_LABEL,
   FACING,
   REDUCED_MOTION,
   VIBRATION,
+  loadBoardStyle,
   loadFlag,
   loadTouchConfirm,
+  saveBoardStyle,
   saveFlag,
   saveTouchConfirm,
   type Flag,
@@ -16,26 +20,34 @@ import { SceneKeys, type MainMenuData } from '../types/scenes';
 import type { PixelText } from '../display/pixelText';
 import { addButton, addText, createFocusFrame, frameAround, paintButton } from '../ui/widgets';
 
-export type SettingId = 'touch' | 'motion' | 'vibration' | 'facing';
+export type SettingId = 'touch' | 'motion' | 'vibration' | 'facing' | 'style';
 
 interface SettingRow {
   id: SettingId;
   label: string;
   /** Shown at the bottom while the row has focus. */
   help: string;
-  options: readonly [string, string];
-  /** Which option holds now (0 or 1). */
-  get: () => 0 | 1;
-  set: (option: 0 | 1) => void;
+  options: readonly string[];
+  /** Which option holds now. */
+  get: () => number;
+  set: (option: number) => void;
   items: PixelText[];
 }
 
 /** Positions (base px), for playtests. Row i is at y = firstY + i * gapY; "กลับ" last. */
-export const SETTINGS_LAYOUT = { optionX: [282, 384], firstY: 58, gapY: 30, backY: 186 } as const;
+export const SETTINGS_LAYOUT = {
+  /** Button centres and width for a row of two options, and of three. */
+  optionX: { 2: [282, 384], 3: [265, 333, 401] },
+  optionW: { 2: 96, 3: 62 },
+  labelX: 226,
+  firstY: 46,
+  gapY: 26,
+  backY: 186,
+} as const;
 
 /**
  * Settings (GDD §7) that exist so far. Sowing speed and round count stay on the main menu
- * where they were; sound and "show numbers" arrive with the audio and art passes.
+ * where they were; sound arrives with the audio pass.
  * Every change is saved at once (src/settings.ts) and read by the next game.
  * Mouse, or ↑ ↓ + ← → / Enter; Esc / gamepad B goes back.
  */
@@ -68,7 +80,7 @@ export class SettingsScene extends Phaser.Scene {
       help,
       // `onFirst`: the first option means "on".
       options: onFirst ? ['เปิด', 'ปิด'] : ['ปิด', 'เปิด'],
-      get: () => ((loadFlag(reg, flag) === onFirst ? 0 : 1) as 0 | 1),
+      get: () => (loadFlag(reg, flag) === onFirst ? 0 : 1),
       set: (o) => saveFlag(reg, flag, (o === 0) === onFirst),
     });
 
@@ -84,19 +96,28 @@ export class SettingsScene extends Phaser.Scene {
       flagRow('motion', 'ลดการเคลื่อนไหว', 'หว่านเสร็จทันที ไม่มีภาพเคลื่อนไหวหรือสั่น', REDUCED_MOTION, false),
       flagRow('vibration', 'สั่นตอนกิน', 'จอยสั่น (และมือถือ Android สั่น) เมื่อมีการกินเม็ด', VIBRATION, true),
       flagRow('facing', 'หันหน้าเข้าหากัน', 'โหมด 2 คน: ชื่อและตัวเลขฝั่งผู้เล่น 2 กลับหัว สำหรับวางเครื่องบนโต๊ะ', FACING, false),
+      {
+        id: 'style',
+        label: 'แบบการเล่น',
+        help: 'เม็ด: ลูกแก้ว · มือ: ลูกแก้วและรูปมือหว่าน · ตัวเลข: เลขในหลุม',
+        options: BOARD_STYLES.map((s) => BOARD_STYLE_LABEL[s]),
+        get: () => BOARD_STYLES.indexOf(loadBoardStyle(reg)),
+        set: (o) => saveBoardStyle(reg, BOARD_STYLES[o]),
+      },
     ];
 
-    addText(this, width / 2, 24, 'ตั้งค่า', 18, CSS.gold);
+    addText(this, width / 2, 20, 'ตั้งค่า', 18, CSS.gold);
     this.rows = defs.map((def, r) => {
       const y = SETTINGS_LAYOUT.firstY + r * SETTINGS_LAYOUT.gapY;
-      addText(this, SETTINGS_LAYOUT.optionX[0] - 56, y, def.label, 12, CSS.cream).setOrigin(1, 0.5);
+      const count = def.options.length === 3 ? 3 : 2;
+      addText(this, SETTINGS_LAYOUT.labelX, y, def.label, 12, CSS.cream).setOrigin(1, 0.5);
       const row: SettingRow = { ...def, items: [] };
       row.items = def.options.map((label, i) =>
-        addButton(this, SETTINGS_LAYOUT.optionX[i], y, label, {
-          width: 96,
+        addButton(this, SETTINGS_LAYOUT.optionX[count][i], y, label, {
+          width: SETTINGS_LAYOUT.optionW[count],
           onClick: () => {
             this.focus = r;
-            this.pick(row, i as 0 | 1);
+            this.pick(row, i);
           },
         }),
       );
@@ -134,13 +155,13 @@ export class SettingsScene extends Phaser.Scene {
         this.setFocus(Math.min(this.rows.length, this.focus + 1));
         break;
       case 'left':
-        if (row) this.pick(row, 0);
+        if (row) this.pick(row, Math.max(0, row.get() - 1));
         break;
       case 'right':
-        if (row) this.pick(row, 1);
+        if (row) this.pick(row, Math.min(row.options.length - 1, row.get() + 1));
         break;
       case 'confirm':
-        if (row) this.pick(row, row.get() === 0 ? 1 : 0);
+        if (row) this.pick(row, (row.get() + 1) % row.options.length);
         else this.leave();
         break;
       case 'cancel':
@@ -151,7 +172,7 @@ export class SettingsScene extends Phaser.Scene {
     }
   }
 
-  private pick(row: SettingRow, option: 0 | 1): void {
+  private pick(row: SettingRow, option: number): void {
     row.set(option);
     this.refresh();
   }

@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import { BOARD_SIZE, P1_STORE, isStore, otherPlayer, storeOf } from '../logic/board';
 import { createGame, isLegalMove, legalMoves, playMove, randomPlayer, startNextRound } from '../logic/rules';
 import type { GameState, PitIndex, Player, Step } from '../logic/types';
-import { LAYOUT, countPosition, handPosition, slotPosition } from '../display/boardLayout';
+import { LAYOUT, countPosition, slotPosition } from '../display/boardLayout';
+import { SowingHand, type HandPose } from '../display/sowingHand';
 import { seedSpots } from '../display/seedLayout';
 import { FLYING_FRAME, SEEDS_TEXTURE, SEED_ORIGIN, SeedPiles } from '../display/seedPiles';
 import { COLORS, CSS, PLAYER_COLOR, PLAYER_CSS } from '../display/palette';
@@ -27,10 +28,12 @@ import {
   SOW_SPEED_LABEL,
   VIBRATION,
   loadFlag,
+  loadBoardStyle,
   loadSowSpeed,
   loadTouchConfirm,
   nextSowSpeed,
   saveSowSpeed,
+  type BoardStyle,
   type SowSpeed,
 } from '../settings';
 import { clearSavedGame, saveGame } from '../save';
@@ -82,6 +85,8 @@ export class GameScene extends Phaser.Scene {
   /** Settings: rumble on captures; P2's names and numbers upside down (2 players). */
   vibration = true;
   facing = false;
+  /** Settings: marbles, marbles with a hand, or numbers. */
+  boardStyle: BoardStyle = 'marbles';
   /** Captures that asked for a rumble (read by playtests). */
   buzzCount = 0;
   /** Scene-clock time each seed of the current move landed (AC-UI3 timing). */
@@ -93,8 +98,7 @@ export class GameScene extends Phaser.Scene {
   private shown: number[] = [];
   private shownDead: boolean[] = [];
   private hoverPit: PitIndex | null = null;
-  private hand!: Phaser.GameObjects.Container;
-  private handLabel!: PixelText;
+  private hand!: SowingHand;
   private banner!: PixelText;
   private p1Label!: PixelText;
   private p2Label!: PixelText;
@@ -136,6 +140,7 @@ export class GameScene extends Phaser.Scene {
     this.reducedMotion = loadFlag(this.registry, REDUCED_MOTION);
     this.touchConfirm = loadTouchConfirm(this.registry) === 'double';
     this.vibration = loadFlag(this.registry, VIBRATION);
+    this.boardStyle = loadBoardStyle(this.registry);
     this.buzzCount = 0;
     this.dropTimes = [];
     this.nextBeatAt = null;
@@ -217,6 +222,16 @@ export class GameScene extends Phaser.Scene {
   /** Marbles drawn in each slot (a very full slot shows fewer than its number). */
   displayedSeeds(): number[] {
     return this.slots.map((_, i) => this.piles.count(i));
+  }
+
+  /** The sowing hand right now (read by playtests): shown or not, whose, and its pose. */
+  handState(): { visible: boolean; player: Player; pose: HandPose } {
+    return { visible: this.hand.body.visible, player: this.hand.player, pose: this.hand.pose };
+  }
+
+  /** Every count is written inside its own bowl (seeds shown as numbers). */
+  countsInBowls(): boolean {
+    return this.slots.every((s) => s.label.x === s.shape.x && s.label.y === s.shape.y);
   }
 
   /** P2's name label is drawn upside down ("หันหน้าเข้าหากัน"). */
@@ -305,6 +320,7 @@ export class GameScene extends Phaser.Scene {
 
   private drawBoard(): void {
     const { board } = LAYOUT;
+    this.add.image(0, 0, 'bamboo').setOrigin(0);
     this.add.image(board.x, board.y, 'board').setOrigin(0);
     this.piles = new SeedPiles(this);
   }
@@ -315,9 +331,10 @@ export class GameScene extends Phaser.Scene {
       if (isStore(i)) {
         const owner: Player = i === P1_STORE ? 0 : 1;
         const shape = this.add.circle(x, y, LAYOUT.store.radius).setStrokeStyle(1, PLAYER_COLOR[owner]);
-        const count = countPosition(i);
+        const beside = countPosition(i);
+        const count = this.boardStyle === 'numbers' ? { x, y } : beside;
         const label = this.label(count.x, count.y, '0', 18, CSS.cream, true).setOrigin(0.5);
-        const tag = this.label(count.x - 26, count.y, owner === 0 ? 'P1' : 'P2', 10, PLAYER_CSS[owner]).setOrigin(0.5);
+        const tag = this.label(beside.x - 26, beside.y, owner === 0 ? 'P1' : 'P2', 10, PLAYER_CSS[owner]).setOrigin(0.5);
         if (this.facing && owner === 1) {
           tag.setRotation(Math.PI);
           label.setRotation(Math.PI);
@@ -327,8 +344,9 @@ export class GameScene extends Phaser.Scene {
       }
 
       const shape = this.add.circle(x, y, LAYOUT.pitRadius);
-      const count = countPosition(i);
-      const label = this.label(count.x, count.y, '0', 12, CSS.cream, true).setOrigin(0.5);
+      const numbers = this.boardStyle === 'numbers';
+      const count = numbers ? { x, y } : countPosition(i);
+      const label = this.label(count.x, count.y, '0', numbers ? 16 : 12, CSS.cream, true).setOrigin(0.5);
       // "หันหน้าเข้าหากัน": the person across the table reads P2's numbers the right way up.
       if (this.facing && i > P1_STORE) label.setRotation(Math.PI);
       this.slots[i] = { shape, label };
@@ -368,9 +386,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createHand(): void {
-    const circle = this.add.circle(0, 0, 8, COLORS.gold).setStrokeStyle(1, COLORS.woodDark);
-    this.handLabel = this.label(0, 0, '', 10, CSS.pitShadow, true).setOrigin(0.5);
-    this.hand = this.add.container(0, 0, [circle, this.handLabel]).setDepth(10).setVisible(false);
+    this.hand = new SowingHand(this, this.boardStyle === 'hand', this.facing);
   }
 
   private setupInput(): void {
@@ -557,7 +573,7 @@ export class GameScene extends Phaser.Scene {
       if (this.skipRequested || !this.sys.isActive()) break;
       await this.animateStep(step);
     }
-    this.hand.setVisible(false);
+    this.hand.hide();
   }
 
   private async animateStep(step: Step): Promise<void> {
@@ -566,8 +582,7 @@ export class GameScene extends Phaser.Scene {
     switch (step.kind) {
       case 'pickup':
         this.setShown(step.pit, 0);
-        this.hand.setPosition(handPosition(step.pit).x, handPosition(step.pit).y).setVisible(true);
-        this.handLabel.setText(String(step.seeds));
+        this.hand.take(step.player, step.pit, step.seeds);
         await this.wait(this.beat());
         break;
 
@@ -576,18 +591,20 @@ export class GameScene extends Phaser.Scene {
         await this.moveHandTo(step.pit, this.beat());
         this.dropTimes.push(this.time.now);
         this.setShown(step.pit, step.pitSeeds, true);
-        this.handLabel.setText(step.handSeeds > 0 ? String(step.handSeeds) : '');
+        this.hand.dropped(step.handSeeds);
+        // The empty hand stays open for a moment before it goes or picks up again.
+        if (step.handSeeds === 0 && this.boardStyle === 'hand') await this.wait(this.pauseMs(160));
         break;
 
       case 'relay':
         this.setShown(step.pit, 0, true);
-        this.handLabel.setText(String(step.seeds));
+        this.hand.take(step.player, step.pit, step.seeds);
         this.showBanner(`หว่านต่อ ${step.seeds} เม็ด`, CSS.cream);
         await this.wait(this.dropMs() * 2);
         break;
 
       case 'capture': {
-        this.hand.setVisible(false);
+        this.hand.hide();
         const store = storeOf(step.player);
         this.setShown(step.opposite, 0);
         this.setShown(step.pit, 0);
@@ -622,7 +639,7 @@ export class GameScene extends Phaser.Scene {
       }
 
       case 'turnEnd':
-        this.hand.setVisible(false);
+        this.hand.hide();
         break;
 
       case 'pass':
@@ -691,7 +708,7 @@ export class GameScene extends Phaser.Scene {
     this.slots.forEach((slot, i) => {
       slot.shape.setScale(1);
       slot.label.setText(this.shownDead[i] ? '×' : String(this.shown[i]));
-      this.piles.set(i, this.shown[i]);
+      this.showSeeds(i);
     });
     this.refreshPitStyles();
   }
@@ -700,8 +717,13 @@ export class GameScene extends Phaser.Scene {
     this.shown[index] = seeds;
     const slot = this.slots[index];
     slot.label.setText(this.shownDead[index] ? '×' : String(seeds));
-    this.piles.set(index, seeds);
+    this.showSeeds(index);
     if (pulse && !this.reducedMotion && !this.skipRequested) this.piles.bounce(index);
+  }
+
+  /** The marbles of a slot (none when seeds are shown as numbers). */
+  private showSeeds(index: PitIndex): void {
+    this.piles.set(index, this.boardStyle === 'numbers' ? 0 : this.shown[index]);
   }
 
   private setDead(index: PitIndex, dead: boolean): void {
@@ -823,12 +845,19 @@ export class GameScene extends Phaser.Scene {
   }
 
   private moveHandTo(index: PitIndex, ms: number): Promise<void> {
-    const p = handPosition(index);
+    const p = this.hand.spot(index);
     if (ms <= 0 || this.skipRequested) {
-      this.hand.setPosition(p.x, p.y);
+      this.hand.body.setPosition(p.x, p.y);
       return Promise.resolve();
     }
-    return this.tweenAsync({ targets: this.hand, x: p.x, y: p.y, duration: ms, ease: 'Sine.InOut' });
+    return this.tweenAsync({
+      targets: this.hand.body,
+      x: p.x,
+      y: p.y,
+      duration: ms,
+      ease: 'Sine.InOut',
+      onUpdate: (tween: Phaser.Tweens.Tween) => this.hand.travel(tween.progress),
+    });
   }
 
   /** Seeds fly from a pit into a store (captures, and leftovers at round end). */
@@ -837,10 +866,16 @@ export class GameScene extends Phaser.Scene {
     if (ms <= 0 || this.skipRequested) return;
     const a = slotPosition(from);
     const b = slotPosition(to);
-    const marbles = seedSpots(from)
-      .slice(0, count)
-      .map((s) => this.add.image(s.dx, s.dy, SEEDS_TEXTURE, FLYING_FRAME + s.variant).setOrigin(SEED_ORIGIN));
-    const handful = this.add.container(a.x, a.y, marbles).setDepth(11);
+    const parts =
+      this.boardStyle === 'numbers'
+        ? [
+            this.add.circle(0, 0, 10, COLORS.seedLight).setStrokeStyle(1, COLORS.gold),
+            this.label(0, 0, String(count), 10, CSS.cream, true).setOrigin(0.5),
+          ]
+        : seedSpots(from)
+            .slice(0, count)
+            .map((s) => this.add.image(s.dx, s.dy, SEEDS_TEXTURE, FLYING_FRAME + s.variant).setOrigin(SEED_ORIGIN));
+    const handful = this.add.container(a.x, a.y, parts).setDepth(11);
     await this.tweenAsync({ targets: handful, x: b.x, y: b.y, duration: ms, ease: 'Quad.InOut' });
     handful.destroy();
   }
@@ -869,8 +904,11 @@ export class GameScene extends Phaser.Scene {
     for (const done of [...this.pending]) done();
   }
 
-  /** Pixel text (GDD §10): Thai at 12 px or more; digits and "P1" may be smaller. */
+  /**
+   * Pixel text (GDD §10): Thai at 12 px or more; digits and "P1" may be smaller. A dark edge
+   * keeps it readable on the bamboo.
+   */
   private label(x: number, y: number, text: string, size: number, color: string, bold = false): PixelText {
-    return addPixelText(this, x, y, text, { size, color, bold });
+    return addPixelText(this, x, y, text, { size, color, bold, outline: CSS.textEdge });
   }
 }
