@@ -83,6 +83,9 @@ export default [
   { name: 'back on the menu', action: 'waitFor', expression: `game.scene.isActive('MainMenuScene')`, timeout: 3000 },
 
   // ── Settings survive a reload (AC-S2). After a reload only keys and expressions work. ──
+  { name: 'let the menu settle', action: 'wait', ms: 100 },
+  { name: 'click "AI ง่าย"', action: 'click', x: 2 * 220, y: 2 * 56 },
+  { name: 'easy AI chosen', action: 'expect', expect: { expression: `${MM}.opponent`, equals: 'easy' } },
   { name: 'reload the page', action: 'eval', code: `setTimeout(() => location.reload(), 50);` },
   { name: 'let it reload', action: 'wait', ms: 1500 },
   {
@@ -96,12 +99,18 @@ export default [
     })()`,
     timeout: 15000,
   },
+  { name: 'the opponent survived the reload', action: 'expect', expect: { expression: `${MM}.opponent`, equals: 'easy' } },
   ...keys('ArrowDown', 1), // focus starts on "เริ่มเกม", the row just above
   { name: 'Enter opens Settings ', action: 'press', key: 'Enter' },
   { name: 'settings after the reload', action: 'waitFor', expression: `game.scene.isActive('SettingsScene')`, timeout: 3000 },
   { name: 'AC-S2: the settings survived the reload', action: 'expect', expect: { expression: `${SET}.values()`, equals: CHOSEN } },
   { name: 'Esc = back  ', action: 'press', key: 'Escape' },
   { name: 'menu after settings', action: 'waitFor', expression: `game.scene.isActive('MainMenuScene')`, timeout: 3000 },
+
+  // Back to two players: from "ตั้งค่า" ↑ start, ↑ speed, ↑ length, ↑ ruleset, ↑ opponent, then ←.
+  ...keys('ArrowUp', 5),
+  { name: '← picks "2 คน" again', action: 'press', key: 'ArrowLeft' },
+  { name: 'two players', action: 'expect', expect: { expression: `[${MM}.focusRow, ${MM}.opponent]`, equals: ['opponent', 'human'] } },
 
   // ── The settings reach the game ──
   { name: 'key 1 = two-player short game', action: 'press', key: '1' },

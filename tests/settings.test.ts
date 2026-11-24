@@ -9,6 +9,7 @@ import {
   loadFlag,
   loadFullGameRounds,
   loadGameMode,
+  loadOpponent,
   loadRuleset,
   loadSowSpeed,
   loadTouchConfirm,
@@ -16,12 +17,14 @@ import {
   parseFlag,
   parseFullGameRounds,
   parseGameMode,
+  parseOpponent,
   parseRuleset,
   parseSowSpeed,
   parseTouchConfirm,
   saveFlag,
   saveFullGameRounds,
   saveGameMode,
+  saveOpponent,
   saveRuleset,
   saveSowSpeed,
   saveTouchConfirm,
@@ -87,6 +90,15 @@ describe('full game round count setting (R16)', () => {
 });
 
 describe('last game chosen on the menu', () => {
+  it('opponent: a second person unless a known AI level was chosen', () => {
+    expect(['human', 'easy', 'medium', 'hard'].map(parseOpponent)).toEqual(['human', 'easy', 'medium', 'hard']);
+    expect([parseOpponent('grandmaster'), parseOpponent(2), parseOpponent(undefined)]).toEqual(['human', 'human', 'human']);
+    const registry = fakeRegistry();
+    expect(loadOpponent(registry)).toBe('human');
+    saveOpponent(registry, 'hard');
+    expect(loadOpponent(registry)).toBe('hard');
+  });
+
   it('ruleset: traditional unless video was chosen', () => {
     expect([parseRuleset('video'), parseRuleset('traditional'), parseRuleset('kalah'), parseRuleset(undefined)]).toEqual([
       'video',

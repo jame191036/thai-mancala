@@ -6,6 +6,7 @@
 import type Phaser from 'phaser';
 import { DEFAULT_FULL_GAME_ROUNDS, FULL_GAME_ROUND_OPTIONS } from './logic/rules';
 import type { GameMode, Ruleset } from './logic/types';
+import { OPPONENTS, type Opponent } from './types/scenes';
 
 const STORAGE_KEY = 'thai-mancala:settings';
 
@@ -91,7 +92,19 @@ export function saveFullGameRounds(registry: Phaser.Data.DataManager, rounds: Fu
   save(registry, 'fullGameRounds', rounds);
 }
 
-// ── Last game chosen on the menu (ruleset and length) ───────────────────────
+// ── Last game chosen on the menu (opponent, ruleset and length) ─────────────
+
+export function parseOpponent(raw: unknown): Opponent {
+  return (OPPONENTS as readonly unknown[]).includes(raw) ? (raw as Opponent) : 'human';
+}
+
+export function loadOpponent(registry: Phaser.Data.DataManager): Opponent {
+  return load(registry, 'opponent', parseOpponent);
+}
+
+export function saveOpponent(registry: Phaser.Data.DataManager, opponent: Opponent): void {
+  save(registry, 'opponent', opponent);
+}
 
 export function parseRuleset(raw: unknown): Ruleset {
   return raw === 'video' ? 'video' : 'traditional';

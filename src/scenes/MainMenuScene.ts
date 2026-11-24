@@ -11,10 +11,12 @@ import {
   SOW_SPEED_LABEL,
   loadFullGameRounds,
   loadGameMode,
+  loadOpponent,
   loadRuleset,
   loadSowSpeed,
   saveFullGameRounds,
   saveGameMode,
+  saveOpponent,
   saveRuleset,
   saveSowSpeed,
   type FullGameRounds,
@@ -54,8 +56,6 @@ export const MENU_LAYOUT = {
   hintY: 256,
 } as const;
 
-const OPPONENT_REGISTRY_KEY = 'opponent';
-
 /** Small option buttons (choice rows and the bottom row). */
 const CHOICE_STYLE: PixelTextStyle = { size: 12, color: CSS.cream, background: CSS.woodDark, padding: { x: 3, y: 2 } };
 
@@ -91,8 +91,7 @@ interface MenuRow {
  *   "ความเร็วหว่าน": ช้ามาก … เร็วมาก
  *   "เริ่มเกม"     : starts the chosen game (focused at first, so Enter / Space / A start)
  *   bottom row    : ตั้งค่า / สถิติ / เครดิต (MENU_PAGES)
- * Ruleset, length and speed are remembered (src/settings.ts); the opponent only until the
- * page is closed. Shortcuts 1–4 still start a game directly.
+ * Every choice is remembered (src/settings.ts). Shortcuts 1–4 still start a game directly.
  */
 export class MainMenuScene extends Phaser.Scene {
   /** Choices for the next game (read by playtests). */
@@ -122,7 +121,7 @@ export class MainMenuScene extends Phaser.Scene {
 
   create(data: MainMenuData = {}): void {
     const reg = this.registry;
-    this.opponent = (reg.get(OPPONENT_REGISTRY_KEY) as Opponent | undefined) ?? 'human';
+    this.opponent = loadOpponent(reg);
     this.ruleset = loadRuleset(reg);
     this.mode = loadGameMode(reg);
     this.rounds = loadFullGameRounds(reg);
@@ -160,7 +159,7 @@ export class MainMenuScene extends Phaser.Scene {
     // ── Opponent ──
     this.choiceRow('opponent', 'เล่นกับ:', L.opponentY, L.opponentX, 64, OPPONENTS, (o) => OPPONENT_LABEL[o], () => this.opponent, (o) => {
       this.opponent = o;
-      reg.set(OPPONENT_REGISTRY_KEY, o);
+      saveOpponent(reg, o);
     });
 
     // ── Ruleset ──
