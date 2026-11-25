@@ -111,7 +111,7 @@ export default [
   ...go('TitleScene'),
   check('title'),
   background('bg-yard'),
-  { name: 'the logo is on the title screen, on whole pixels', action: 'expect', expect: { expression: `scene('TitleScene').children.list.filter((o) => o.texture?.key === 'logo').map((o) => [o.x, o.y, o.width, o.height])`, equals: [[131, 38, 219, 64]] } },
+  { name: 'the logo is on the title screen, on whole pixels', action: 'expect', expect: { expression: `scene('TitleScene').children.list.filter((o) => o.texture?.key === 'logo').map((o) => [o.x, o.y, o.width, o.height])`, equals: [[131, 26, 219, 64]] } },
   ...go('MainMenuScene'),
   check('menu, traditional rules'),
   background('bg-yard'),

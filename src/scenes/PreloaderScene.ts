@@ -3,6 +3,7 @@ import { loadGameFont } from '../display/fonts';
 import { LID_FRAME, LID_TEXTURE } from '../display/deadLids';
 import { FACES_TEXTURE, FACE_FRAME } from '../display/portrait';
 import { HAND_FRAME, HAND_TEXTURE } from '../display/sowingHand';
+import { TITLE_BOARD_TEXTURE, TITLE_SEEDS_TEXTURE, TITLE_SEED_FRAME } from '../display/titleDemo';
 import { SceneKeys } from '../types/scenes';
 
 /** Loads every asset with a progress bar (and the game font), then shows the title screen. */
@@ -25,6 +26,8 @@ export class PreloaderScene extends Phaser.Scene {
     this.load.image('board', 'assets/board.png');
     this.load.image('bg-night', 'assets/bg-night.png');
     this.load.image('bg-yard', 'assets/bg-yard.png');
+    this.load.image(TITLE_BOARD_TEXTURE, 'assets/title-board.png');
+    this.load.spritesheet(TITLE_SEEDS_TEXTURE, 'assets/title-seeds.png', { frameWidth: TITLE_SEED_FRAME, frameHeight: TITLE_SEED_FRAME });
     this.load.image('logo', 'assets/logo.png');
     this.load.image('logo-small', 'assets/logo-small.png');
     this.load.spritesheet('seeds', 'assets/seeds.png', { frameWidth: 8, frameHeight: 8 });
