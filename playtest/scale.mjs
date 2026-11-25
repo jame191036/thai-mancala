@@ -14,6 +14,14 @@ export default [
       equals: 4,
     },
   },
+  // The browser tab: an icon in both sizes, and a page marked as Thai (no offer to translate it).
+  {
+    name: 'load the tab icons',
+    action: 'eval',
+    code: `Promise.all([...document.querySelectorAll('link[rel=icon]')].map(async (l) => { const i = new Image(); i.src = l.href; await i.decode(); return [l.getAttribute('sizes'), i.width + 'x' + i.height]; })).then((r) => { window.__icons = r; }, (e) => { window.__icons = String(e); });`,
+  },
+  { name: 'tab icons answered', action: 'waitFor', expression: `window.__icons !== undefined`, timeout: 3000 },
+  { name: 'tab icons of 16 and 32 px, Thai page', action: 'expect', expect: { expression: `[window.__icons, document.documentElement.lang]`, equals: [[['16x16', '16x16'], ['32x32', '32x32']], 'th'] } },
   {
     name: 'canvas backing store is the 480×270 base resolution',
     action: 'expect',
