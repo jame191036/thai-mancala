@@ -177,7 +177,9 @@ export class GameScene extends Phaser.Scene {
     this.createHand();
     this.setupInput();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.flushPending();
+      // Drop a move that is still being shown. Letting it go on (flushPending) would sow the
+      // rest of the old game on the next game's board, or on objects that are gone.
+      this.pending.clear();
       this.aiToken += 1;
       this.ai?.destroy();
       this.ai = null;
@@ -928,7 +930,7 @@ export class GameScene extends Phaser.Scene {
     return this.track((done) => this.tweens.add({ ...config, onComplete: done }));
   }
 
-  /** Promise that resolves when `done` is called OR when a skip/shutdown flushes it. */
+  /** Promise that resolves when `done` is called OR when a skip flushes it; never once the scene has shut down. */
   private track(start: (done: () => void) => void): Promise<void> {
     return new Promise((resolve) => {
       const done = () => {

@@ -9,6 +9,8 @@ import type { AiRequest, AiResponse } from './protocol';
  */
 export class AiClient {
   private worker: Worker | null = null;
+  /** The worker's code has loaded. */
+  private ready = false;
   private nextId = 1;
   private pending = new Map<number, { state: GameState; level: AiLevel; resolve: (pit: PitIndex) => void }>();
 
@@ -37,13 +39,25 @@ export class AiClient {
     });
   }
 
+  /**
+   * Stop the worker. One that is still loading its code (the game was left at once) is stopped
+   * when that is done: cut off in the middle, the browser reports an aborted request at the
+   * next page load.
+   */
   destroy(): void {
-    this.worker?.terminate();
+    const worker = this.worker;
     this.worker = null;
     this.pending.clear();
+    if (!worker) return;
+    if (this.ready) worker.terminate();
+    else worker.onmessage = worker.onerror = () => worker.terminate();
   }
 
   private onResponse(res: AiResponse): void {
+    if ('ready' in res) {
+      this.ready = true;
+      return;
+    }
     const job = this.pending.get(res.id);
     if (!job) return;
     this.pending.delete(res.id);

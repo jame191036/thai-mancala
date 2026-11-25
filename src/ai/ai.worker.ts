@@ -19,3 +19,4 @@ ctx.onmessage = (e) => {
     ctx.postMessage({ id, error: err instanceof Error ? err.message : String(err) });
   }
 };
+ctx.postMessage({ ready: true });

@@ -120,7 +120,7 @@
 | คำสั่ง | ใช้ทำ |
 |---|---|
 | `npm run dev` | dev server |
-| `npm test` | Vitest (`--dir tests` ไม่งั้นจะไปรัน test ของ skill Phaser ใน `.claude` ด้วย) |
+| `npm test` | Vitest (`--dir tests` ไม่งั้นจะไปรัน test ของ skill Phaser ใน `.claude` ด้วย) บน Windows รันจาก PowerShell ถ้ารันจาก Git Bash จะล้มทุกไฟล์ด้วย `reading 'config'` |
 | `npm run playtest` | scenario ใน `playtest/` บน dev server |
 | `npm run playtest:touch` | scenario ใน `playtest/touch/` บนมือถือจำลองแนวนอน (`--device phone-landscape`) |
 | `npm run verify` | typecheck + test + playtest ทั้งสองชุดบน production build **ต้องผ่านก่อน commit** |
@@ -164,6 +164,7 @@
   - ระหว่างหว่าน `state.current` เป็นคนถัดไปแล้ว ป้ายบอกตาจึงต้องใช้ `sowingPlayer`
   - field ที่เป็น public (`state`, `busy`, `choosePit()`, `legalPits()`, `displayedPits()`, `displayedDead()`, `reducedMotion`, `lastMovePit`, `records`, `dropTimes`, `buzzCount`) มีไว้ให้ playtest ใช้
   - **จังหวะหว่าน:** `beat()` นัดเวลาเม็ดถัดไปต่อจากเม็ดก่อน ไม่นับจากตอนที่ tween จบ ค่าเฉลี่ยจึงตรงกับความเร็วที่ตั้ง (AC-UI3) ถ้าหยุดเกินหนึ่งจังหวะ เช่นพักเกม จะเริ่มนับใหม่ ไม่เร่งตามให้ทัน
+- **ออกจากเกมกลางการหว่าน:** ตอน SHUTDOWN ใช้ `this.pending.clear()` **ห้ามใช้ `flushPending()`** เพราะจะปล่อยให้ตาเก่าหว่านต่อบนกระดานของเกมใหม่ (บั๊กที่แก้เมื่อ 2026-11-25 ตรวจใน `playtest/leave-mid-move.mjs`)
 - **⚠️ Phaser 4.2.1 ส่ง keyboard event ซ้ำ** ถ้ากดหลายปุ่มภายในเฟรมเดียว เพราะ `KeyboardManager` ประมวลผล queue ทุกครั้งที่มี event เข้ามา แต่ล้าง queue เฟรมละครั้ง ทุกตัวดักปุ่มที่ใช้ `.on('keydown-X')` จึง**ต้องผ่าน `onKeyDown()` ใน `src/input/keys.ts`** ซึ่งกันซ้ำด้วย WeakSet ของ event ถ้าใช้ `.once` ไม่เป็นไร มี playtest ทดสอบไว้ใน `playtest/controls.mjs`
 - **Playtest จอย** (`playtest/gamepad.mjs`): แทน `navigator.getGamepads` ด้วยจอยจำลอง แล้วกดปุ่มผ่าน `window.__padDown/__padUp` ถอดจอยผ่าน `window.__unplug(i)` หลังเปลี่ยน scene ต้องรอประมาณ 300 ms ก่อนกดปุ่มจอย
 - **Playtest:**
@@ -171,18 +172,19 @@
   - พิกัด `click` เป็น CSS px ที่ k = 2 (คูณ 2 จากพิกัดเกม) ส่วนใน `playtest/touch/` k = 4 ที่ dpr 3 จึงคูณ 4/3
   - **ทุก scenario เริ่มด้วย `reachMenu`** จาก `playtest/lib/common.mjs` เพื่อผ่านหน้า Title (โฟลเดอร์ย่อยไม่ถูกรันเป็น scenario) harness คลิกแคนวาสหลังโหลดเสร็จ และคลิกนั้นพาออกจาก Title ไปแล้ว
   - **อยากได้กระดานเฉพาะ:** restart GameScene ด้วย `{ resume: { state, opponent } }` โดย copy `state` เดิมแล้วแก้ `pits` / `current` / `ruleset` แบบใน `timing.mjs`
-- **`tools/playtest.mjs` แก้เพิ่มจากที่ scaffold ให้มา** ถ้าอัปเดต skill แล้ว copy harness ใหม่มาทับ ต้องใส่ 3 จุดนี้กลับ
+- **`tools/playtest.mjs` แก้เพิ่มจากที่ scaffold ให้มา** ถ้าอัปเดต skill แล้ว copy harness ใหม่มาทับ ต้องใส่ 4 จุดนี้กลับ
   1. ลบโค้ดสี ANSI ออกก่อนหา URL ของ server (Windows)
   2. ใช้ `taskkill /T` ปิด process ทั้งชุด ไม่ให้ preview server ค้าง (Windows)
   3. device preset `phone-landscape` (844×390 @ dpr 3, UA Android) สำหรับ `playtest/touch/`
+  4. ตัวแปร `NOW`: request ที่ล้มบอกด้วยว่าเกิดระหว่างขั้นไหน
 - **เครื่องใหม่ต้องรัน `npx playwright install chromium` 1 ครั้ง** ก่อน playtest
 - **CI:** `.github/workflows/ci.yml` รัน verify บน Linux เมื่อ push ขึ้น `main` หรือ `dev` หรือเปิด PR ถ้าตก `tools/ci-failures.mjs` เขียนข้อที่ตกลง annotations (อ่านได้โดยไม่ต้องล็อกอินผ่าน API `check-runs/<job id>/annotations`) **รอให้ CI ของ `dev` ผ่านก่อน merge เข้า `main`** ส่วน `deploy-pages.yml` deploy ขึ้น GitHub Pages เมื่อ push tag
 - **Branch:** งานใหม่ทำบน `dev` แล้ว merge เข้า `main` เมื่อเจ้าของสั่ง (เริ่ม 2026-11-24)
 
 ## สถานะปัจจุบัน
 - มี GDD v0.2 และ acceptance criteria แล้ว
-- Scaffold Phaser 4 เสร็จแล้ว `npm run verify` ผ่าน (unit 255, playtest 462, touch 25)
-  - **verify ไม่นิ่งเป็นบางรอบ น่าจะเพราะ RAM เครื่องไม่พอ** (2026-11-25 ตอนเหลือราว 450 MB Chrome ฟ้อง `ERR_INSUFFICIENT_RESOURCES` พร้อม context lost และหน้าโหลดไม่ขึ้น พอเหลือราว 1 GB ผ่านหมด แต่ยังมี warning context lost บ้าง) **ก่อนรัน verify ให้ปิดโปรแกรมที่กิน RAM และ dev server ที่ไม่ใช้:** เคยเจอ warning "WebGL context lost", หน้าค้างราว 0.5 วินาทีจน playtest จอยพลาดปุ่ม 3 ข้อ และ harness จบด้วย exit 2 หนึ่งครั้ง ดูได้จากเช็ก "within 100ms" ที่ใช้เวลาหลายร้อย ms ให้รันซ้ำก่อนสรุปว่าเป็นบั๊ก **`ERR_ABORTED` ของ `ai.worker`** เจอ 1 ครั้ง (2026-11-25) ทำซ้ำได้เฉพาะเมื่อโหลดหน้าใหม่ภายในราว 60 ms หลังเริ่มเกมกับ AI ส่วนการปิด worker ตอนกำลังโหลดไม่ทำให้เกิด (วัดแล้ว 2026-11-24 ว่ากระดานใหม่ไม่ได้ทำให้เฟรมช้าลง)
+- Scaffold Phaser 4 เสร็จแล้ว `npm run verify` ผ่าน (unit 255, playtest 499, touch 25)
+  - **verify ไม่นิ่งเป็นบางรอบ น่าจะเพราะ RAM เครื่องไม่พอ** (2026-11-25 ตอนเหลือราว 450 MB Chrome ฟ้อง `ERR_INSUFFICIENT_RESOURCES` พร้อม context lost และหน้าโหลดไม่ขึ้น พอเหลือราว 1 GB ผ่านหมด แต่ยังมี warning context lost บ้าง) **ก่อนรัน verify ให้ปิดโปรแกรมที่กิน RAM และ dev server ที่ไม่ใช้:** เคยเจอ warning "WebGL context lost", หน้าค้างราว 0.5 วินาทีจน playtest จอยพลาดปุ่ม 3 ข้อ และ harness จบด้วย exit 2 หนึ่งครั้ง ดูได้จากเช็ก "within 100ms" ที่ใช้เวลาหลายร้อย ms ให้รันซ้ำก่อนสรุปว่าเป็นบั๊ก **`ERR_ABORTED` ของ `ai.worker` แก้แล้ว (2026-11-25):** ปิด worker กลางการโหลดไฟล์ แล้ว Chrome รายงานตอนเปลี่ยนหน้าครั้งถัดไป `AiClient.destroy()` จึงรอข้อความ `ready` จาก worker ก่อนปิด (`vs-ai.mjs` ตรวจ) (วัดแล้ว 2026-11-24 ว่ากระดานใหม่ไม่ได้ทำให้เฟรมช้าลง)
 - **M0 rules engine เสร็จแล้ว** (`src/logic/`) ผ่าน F1–F16, AC-R1–R19 และ fuzz test (เกมสั้นและเกมเต็มที่สุ่มเล่นจบทุกเกม)
 - **GameScene เล่นได้ครบด้วยกราฟิกชั่วคราว** (วงกลม + ตัวเลข)
   - 2 คนเครื่องเดียว มีทั้งเกมสั้นและเกมเต็ม 3 รอบ

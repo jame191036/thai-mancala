@@ -9,5 +9,5 @@ export interface AiRequest {
   timeBudgetMs?: number;
 }
 
-/** Worker → main thread. */
-export type AiResponse = { id: number; pit: PitIndex } | { id: number; error: string };
+/** Worker → main thread. `ready` comes once, when the worker's code has loaded. */
+export type AiResponse = { ready: true } | { id: number; pit: PitIndex } | { id: number; error: string };

@@ -117,6 +117,8 @@ const C = { red: '\x1b[0;31m', yellow: '\x1b[1;33m', green: '\x1b[0;32m', cyan: 
 let QUIET = false;
 const log = (m = '') => { if (!QUIET) console.log(m); };
 const checks = [];
+// What the harness is doing right now, so a failed request says when it failed.
+let NOW = 'boot';
 // When a scenario is being repeated, records are diverted into a per-run buffer so
 // each attempt can be judged on its own before the runs are aggregated.
 let CAPTURE = null;
@@ -440,6 +442,7 @@ async function runSteps(ctx, steps) {
 
   for (const [i, step] of steps.entries()) {
     const label = (ctx.prefix ?? '') + (step.name || `step ${i + 1} (${step.action})`);
+    NOW = `${path.basename(outDir)}: ${label}`;
     let precomputed;
 
     switch (step.action) {
@@ -701,7 +704,7 @@ async function main() {
     else if (msg.type() === 'warning') consoleWarnings.push(entry);
   });
   page.on('pageerror', (err) => pageErrors.push({ message: err.message, stack: (err.stack || '').split('\n').slice(0, 6).join('\n') }));
-  page.on('requestfailed', (req) => failedRequests.push({ url: req.url(), reason: req.failure()?.errorText ?? 'unknown' }));
+  page.on('requestfailed', (req) => failedRequests.push({ url: req.url(), reason: `${req.failure()?.errorText ?? 'unknown'} (during ${NOW})` }));
 
   // A plain status check is not enough. Vite and most SPA dev servers answer a
   // missing `assets/foo.png` with `200 text/html` (the index.html fallback), so the
@@ -817,6 +820,7 @@ async function main() {
     // into the next. Storage is cleared too: a saved best score or settings toggle from
     // an earlier scenario would otherwise change what a later one observes.
     const freshLoad = async () => {
+      NOW = `fresh page after ${NOW}`;
       await page.evaluate(() => { try { localStorage.clear(); sessionStorage.clear(); } catch { /* sandboxed */ } });
       await page.reload({ waitUntil: 'load', timeout: 60000 });
       try { await page.waitForSelector('canvas', { timeout: 15000, state: 'attached' }); } catch { /* reported below */ }
