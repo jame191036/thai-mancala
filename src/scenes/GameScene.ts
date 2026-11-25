@@ -390,7 +390,7 @@ export class GameScene extends Phaser.Scene {
       this.opponent === 'human'
         ? null
         : new Portrait(this, this.opponent, { x: 8, y: 3, bubble: { x: 10, y: 51 }, still: this.reducedMotion });
-    this.p2Label = (this.portrait ? this.label(46, 17, '', 16, CSS.dim, true) : this.label(12, 14, '', TEXT_SIZE, CSS.dim, true)).setOrigin(0, 0.5);
+    this.p2Label = (this.portrait ? this.label(46, 18, '', 16, CSS.dim, true) : this.label(12, 14, '', TEXT_SIZE, CSS.dim, true)).setOrigin(0, 0.5);
     // Upside down, the text must grow to the right of x from its other end.
     if (this.facing) this.p2Label.setOrigin(1, 0.5).setRotation(Math.PI);
     this.roundLabel = this.label(240, 14, '', TEXT_SIZE, CSS.dim).setOrigin(0.5);

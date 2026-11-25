@@ -6,7 +6,7 @@ import { SceneKeys, type MainMenuData } from '../types/scenes';
 import { TEXT_SIZE, addButton, addText, createFocusFrame, frameAround, paintButton } from '../ui/widgets';
 
 /** "กลับ" button centre (base px), for playtests. */
-export const CREDITS_LAYOUT = { backY: 232 } as const;
+export const CREDITS_LAYOUT = { backY: 234 } as const;
 
 /**
  * Credits (GDD §7): tools, the font (its OFL licence asks for it) and the rule sources of
@@ -22,23 +22,23 @@ export class CreditsScene extends Phaser.Scene {
     const { width } = this.scale;
     const line = (y: number, s: string, color: string = CSS.cream, size = TEXT_SIZE, bold = false) => addText(this, width / 2, y, s, size, color, bold);
 
-    line(16, 'เครดิต', CSS.gold, 18, true);
-    line(42, 'หมากขุม: การละเล่นพื้นบ้านไทย', CSS.cream, 14, true);
-    line(65, 'สร้างด้วย Phaser 4 · TypeScript · Vite');
+    line(14, 'เครดิต', CSS.gold, 18, true);
+    line(40, 'หมากขุม: การละเล่นพื้นบ้านไทย', CSS.cream, 14, true);
+    line(64, 'สร้างด้วย Phaser 4 · TypeScript · Vite');
     line(83, 'ฟอนต์ Mali (Cadson Demak) · SIL Open Font License 1.1');
 
-    line(106, 'แหล่งอ้างอิงกติกา', CSS.gold, TEXT_SIZE, true);
-    line(123, 'บันทึกหมากขุมไทย ค.ศ. 1836 · Ludii Portal (ludii.games)');
+    line(104, 'แหล่งอ้างอิงกติกา', CSS.gold, TEXT_SIZE, true);
+    line(122, 'บันทึกหมากขุมไทย ค.ศ. 1836 · Ludii Portal (ludii.games)');
     line(140, 'THAILEX: mahk khum (หมากขุม) · thailex.info');
-    line(160, 'แบบตามวิดีโอ: youtube.com/watch?v=ZwP1hlU_m_c');
+    line(161, 'แบบตามวิดีโอ: youtube.com/watch?v=ZwP1hlU_m_c');
 
-    line(182, 'งานภาพ: กระดานและลูกแก้ววาดขึ้นใหม่สำหรับเกมนี้ · เสียง: ยังไม่มี', CSS.dim);
-    line(208, 'ไม่ได้ลอกลายหรือภาพจากงานที่มีลิขสิทธิ์', CSS.dim);
+    line(184, 'งานภาพ: กระดานและลูกแก้ววาดขึ้นใหม่สำหรับเกมนี้ · เสียง: ยังไม่มี', CSS.dim);
+    line(210, 'ไม่ได้ลอกลายหรือภาพจากงานที่มีลิขสิทธิ์', CSS.dim);
 
     const back = addButton(this, width / 2, CREDITS_LAYOUT.backY, 'กลับ', { width: 90, onClick: () => this.leave() });
     paintButton(back, true);
     frameAround(createFocusFrame(this), back);
-    line(256, 'Enter / Esc / จอย A หรือ B กลับ', CSS.dim);
+    line(257, 'Enter / Esc / จอย A หรือ B กลับ', CSS.dim);
 
     onKeyDown(this, 'ENTER', () => this.leave());
     onKeyDown(this, 'SPACE', () => this.leave());

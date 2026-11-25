@@ -74,7 +74,7 @@ export default [
   { name: 'menu, focus on "เครดิต"', action: 'waitFor', expression: `game.scene.isActive('MainMenuScene') && ${MM}.focusCol === 2`, timeout: 3000 },
   { name: 'click "สถิติ"', action: 'click', x: 2 * 240, y: 2 * 226 },
   { name: 'stats by mouse', action: 'waitFor', expression: `game.scene.isActive('StatsScene')`, timeout: 3000 },
-  { name: 'click "กลับ" on stats', action: 'click', x: 2 * 190, y: 2 * 232 },
+  { name: 'click "กลับ" on stats', action: 'click', x: 2 * 190, y: 2 * 235 },
   { name: 'menu again', action: 'waitFor', expression: `game.scene.isActive('MainMenuScene')`, timeout: 3000 },
   { name: 'click "ตั้งค่า"', action: 'click', x: 2 * 176, y: 2 * 226 },
   { name: 'settings by mouse', action: 'waitFor', expression: `game.scene.isActive('SettingsScene')`, timeout: 3000 },
@@ -83,7 +83,7 @@ export default [
   { name: 'menu once more', action: 'waitFor', expression: `game.scene.isActive('MainMenuScene')`, timeout: 3000 },
   { name: 'click "เครดิต"', action: 'click', x: 2 * 304, y: 2 * 226 },
   { name: 'credits by mouse', action: 'waitFor', expression: `game.scene.isActive('CreditsScene')`, timeout: 3000 },
-  { name: 'click "กลับ" on credits', action: 'click', x: 2 * 240, y: 2 * 232 },
+  { name: 'click "กลับ" on credits', action: 'click', x: 2 * 240, y: 2 * 234 },
   { name: 'back on the menu', action: 'waitFor', expression: `game.scene.isActive('MainMenuScene')`, timeout: 3000 },
 
   // ── Settings survive a reload (AC-S2). After a reload only keys and expressions work. ──

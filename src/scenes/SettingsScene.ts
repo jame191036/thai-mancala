@@ -106,7 +106,7 @@ export class SettingsScene extends Phaser.Scene {
       },
     ];
 
-    addText(this, width / 2, 18, 'ตั้งค่า', 18, CSS.gold);
+    addText(this, width / 2, 20, 'ตั้งค่า', 18, CSS.gold);
     this.rows = defs.map((def, r) => {
       const y = SETTINGS_LAYOUT.firstY + r * SETTINGS_LAYOUT.gapY;
       const count = def.options.length === 3 ? 3 : 2;

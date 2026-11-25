@@ -12,7 +12,7 @@ export type StatsChoice = 'back' | 'clear';
 const CHOICES: readonly StatsChoice[] = ['back', 'clear'];
 
 /** Button centres (base px), for playtests. */
-export const STATS_LAYOUT = { y: 232, backX: 190, clearX: 290 } as const;
+export const STATS_LAYOUT = { y: 235, backX: 190, clearX: 290 } as const;
 
 const MODE_LABEL: Record<GameMode, string> = { short: 'เกมสั้น', full: 'เกมเต็ม' };
 /** Centre of each mode's three number columns: P1 wins, P2 wins, draws. */
@@ -49,9 +49,9 @@ export class StatsScene extends Phaser.Scene {
     this.cells = [];
     const { width } = this.scale;
 
-    addText(this, width / 2, 12, 'สถิติ', 18, CSS.gold);
+    addText(this, width / 2, 11, 'สถิติ', 18, CSS.gold);
     for (const m of GAME_MODES) {
-      addText(this, MODE_X[m], 34, MODE_LABEL[m], TEXT_SIZE, CSS.gold);
+      addText(this, MODE_X[m], 35, MODE_LABEL[m], TEXT_SIZE, CSS.gold);
       ['P1 ชนะ', 'P2 ชนะ', 'เสมอ'].forEach((h, i) => addText(this, MODE_X[m] + (i - 1) * COL_GAP, 52, h, TEXT_SIZE, CSS.dim, false));
     }
     OPPONENTS.forEach((o, r) => {
@@ -63,10 +63,10 @@ export class StatsScene extends Phaser.Scene {
       }
     });
 
-    this.total = addText(this, width / 2, 140, '', TEXT_SIZE, CSS.dim, false);
-    const spots = [[128, 164], [352, 164], [width / 2, 187]];
+    this.total = addText(this, width / 2, 138, '', TEXT_SIZE, CSS.dim, false);
+    const spots = [[128, 165], [352, 165], [width / 2, 190]];
     this.records = spots.map(([x, y]) => addText(this, x, y, '', TEXT_SIZE, CSS.cream, false));
-    addText(this, width / 2, 209, 'สถิติพิเศษนับเฉพาะคน ไม่นับ AI · ยอมแพ้นับเป็นแพ้', TEXT_SIZE, CSS.dim, false);
+    addText(this, width / 2, 212, 'สถิติพิเศษนับเฉพาะคน ไม่นับ AI · ยอมแพ้นับเป็นแพ้', TEXT_SIZE, CSS.dim, false);
     this.fill();
 
     this.buttons.set('back', addButton(this, STATS_LAYOUT.backX, STATS_LAYOUT.y, 'กลับ', { width: 70, onClick: () => this.choose('back'), onHover: () => this.setFocus('back') }));
