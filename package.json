@@ -8,7 +8,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --dir tests",
     "playtest": "node tools/playtest.mjs --project . --scenario playtest",
     "playtest:build": "node tools/playtest.mjs --project . --mode build --scenario playtest",
     "playtest:touch": "node tools/playtest.mjs --project . --device phone-landscape --scenario playtest/touch",

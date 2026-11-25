@@ -120,7 +120,7 @@
 | คำสั่ง | ใช้ทำ |
 |---|---|
 | `npm run dev` | dev server |
-| `npm test` | Vitest (`tests/`) |
+| `npm test` | Vitest (`--dir tests` ไม่งั้นจะไปรัน test ของ skill Phaser ใน `.claude` ด้วย) |
 | `npm run playtest` | scenario ใน `playtest/` บน dev server |
 | `npm run playtest:touch` | scenario ใน `playtest/touch/` บนมือถือจำลองแนวนอน (`--device phone-landscape`) |
 | `npm run verify` | typecheck + test + playtest ทั้งสองชุดบน production build **ต้องผ่านก่อน commit** |
@@ -176,12 +176,12 @@
   2. ใช้ `taskkill /T` ปิด process ทั้งชุด ไม่ให้ preview server ค้าง (Windows)
   3. device preset `phone-landscape` (844×390 @ dpr 3, UA Android) สำหรับ `playtest/touch/`
 - **เครื่องใหม่ต้องรัน `npx playwright install chromium` 1 ครั้ง** ก่อน playtest
-- **CI:** `.github/workflows/ci.yml` รัน verify เมื่อ push ขึ้น `main` หรือเปิด PR (push ขึ้น `dev` อย่างเดียวไม่รัน) ส่วน `deploy-pages.yml` deploy ขึ้น GitHub Pages เมื่อ push tag
+- **CI:** `.github/workflows/ci.yml` รัน verify บน Linux เมื่อ push ขึ้น `main` หรือ `dev` หรือเปิด PR ถ้าตก `tools/ci-failures.mjs` เขียนข้อที่ตกลง annotations (อ่านได้โดยไม่ต้องล็อกอินผ่าน API `check-runs/<job id>/annotations`) **รอให้ CI ของ `dev` ผ่านก่อน merge เข้า `main`** ส่วน `deploy-pages.yml` deploy ขึ้น GitHub Pages เมื่อ push tag
 - **Branch:** งานใหม่ทำบน `dev` แล้ว merge เข้า `main` เมื่อเจ้าของสั่ง (เริ่ม 2026-11-24)
 
 ## สถานะปัจจุบัน
 - มี GDD v0.2 และ acceptance criteria แล้ว
-- Scaffold Phaser 4 เสร็จแล้ว `npm run verify` ผ่าน (unit 252, playtest 437, touch 25)
+- Scaffold Phaser 4 เสร็จแล้ว `npm run verify` ผ่าน (unit 249, playtest 437, touch 25)
   - **verify ไม่นิ่งเป็นบางรอบ น่าจะเพราะ RAM เครื่องไม่พอ** (2026-11-25 ตอนเหลือราว 450 MB Chrome ฟ้อง `ERR_INSUFFICIENT_RESOURCES` พร้อม context lost และหน้าโหลดไม่ขึ้น พอเหลือราว 1 GB ผ่านหมด แต่ยังมี warning context lost บ้าง) **ก่อนรัน verify ให้ปิดโปรแกรมที่กิน RAM และ dev server ที่ไม่ใช้:** เคยเจอ warning "WebGL context lost", หน้าค้างราว 0.5 วินาทีจน playtest จอยพลาดปุ่ม 3 ข้อ และ harness จบด้วย exit 2 หนึ่งครั้ง ดูได้จากเช็ก "within 100ms" ที่ใช้เวลาหลายร้อย ms ให้รันซ้ำก่อนสรุปว่าเป็นบั๊ก **`ERR_ABORTED` ของ `ai.worker`** เจอ 1 ครั้ง (2026-11-25) ทำซ้ำได้เฉพาะเมื่อโหลดหน้าใหม่ภายในราว 60 ms หลังเริ่มเกมกับ AI ส่วนการปิด worker ตอนกำลังโหลดไม่ทำให้เกิด (วัดแล้ว 2026-11-24 ว่ากระดานใหม่ไม่ได้ทำให้เฟรมช้าลง)
 - **M0 rules engine เสร็จแล้ว** (`src/logic/`) ผ่าน F1–F16, AC-R1–R19 และ fuzz test (เกมสั้นและเกมเต็มที่สุ่มเล่นจบทุกเกม)
 - **GameScene เล่นได้ครบด้วยกราฟิกชั่วคราว** (วงกลม + ตัวเลข)
