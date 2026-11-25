@@ -3,6 +3,7 @@ import { BOARD_SIZE, P1_STORE, isStore, otherPlayer, storeOf } from '../logic/bo
 import { createGame, isLegalMove, legalMoves, playMove, randomPlayer, startNextRound } from '../logic/rules';
 import type { GameState, PitIndex, Player, Step } from '../logic/types';
 import { LAYOUT, countPosition, slotPosition } from '../display/boardLayout';
+import { DeadLids } from '../display/deadLids';
 import { SowingHand, type HandPose } from '../display/sowingHand';
 import { seedSpots } from '../display/seedLayout';
 import { FLYING_FRAME, SEEDS_TEXTURE, SEED_ORIGIN, SeedPiles } from '../display/seedPiles';
@@ -45,13 +46,13 @@ const BASE_DROP_MS = 120;
 const AI_THINK_MS: Record<AiLevel, number> = { easy: 750, medium: 650, hard: 350 };
 
 interface SlotView {
-  /** Ring drawn over the bowl: whose turn it is, hover, selection, dead. */
+  /** Ring drawn over the bowl: whose turn it is, hover, selection. */
   shape: Phaser.GameObjects.Arc;
   label: PixelText;
 }
 
 /**
- * The หมากขุม board with placeholder graphics (circles + seed counts).
+ * The หมากขุม board.
  *
  * The rules engine (src/logic) decides everything; this scene only animates the `steps`
  * each move returns, one seed at a time, then snaps to the engine's final state so the
@@ -94,6 +95,7 @@ export class GameScene extends Phaser.Scene {
 
   private slots: SlotView[] = [];
   private piles!: SeedPiles;
+  private lids!: DeadLids;
   /** What the screen currently shows (follows the steps during an animation). */
   private shown: number[] = [];
   private shownDead: boolean[] = [];
@@ -211,12 +213,17 @@ export class GameScene extends Phaser.Scene {
 
   /** Numbers currently on screen, slot by slot (dead pits read as 0). */
   displayedPits(): number[] {
-    return this.slots.map((s) => (s.label.text === '×' ? 0 : Number(s.label.text)));
+    return this.slots.map((s, i) => (this.lids.at(i) ? 0 : Number(s.label.text)));
   }
 
-  /** Which slots are drawn as dead pits right now (compare with `state.dead`). */
+  /** Which slots have a lid, and no number, right now (compare with `state.dead`). */
   displayedDead(): boolean[] {
-    return this.slots.map((s) => s.label.text === '×');
+    return this.slots.map((s, i) => this.lids.at(i) !== undefined && !s.label.visible);
+  }
+
+  /** Pits whose lid is still coming down (read by playtests). */
+  closingLids(): PitIndex[] {
+    return this.lids.closing;
   }
 
   /** Marbles drawn in each slot (a very full slot shows fewer than its number). */
@@ -244,6 +251,7 @@ export class GameScene extends Phaser.Scene {
     if (!this.busy) return;
     this.skipRequested = true;
     this.tweens.killAll();
+    this.lids.finish();
     this.flushPending();
   }
 
@@ -323,6 +331,7 @@ export class GameScene extends Phaser.Scene {
     this.add.image(0, 0, 'bamboo').setOrigin(0);
     this.add.image(board.x, board.y, 'board').setOrigin(0);
     this.piles = new SeedPiles(this);
+    this.lids = new DeadLids(this);
   }
 
   private createSlots(): void {
@@ -707,18 +716,24 @@ export class GameScene extends Phaser.Scene {
     this.shownDead = [...state.dead];
     this.slots.forEach((slot, i) => {
       slot.shape.setScale(1);
-      slot.label.setText(this.shownDead[i] ? '×' : String(this.shown[i]));
+      this.showCount(i);
       this.showSeeds(i);
+      if (this.shownDead[i]) this.lids.close(i);
+      else this.lids.open(i);
     });
     this.refreshPitStyles();
   }
 
   private setShown(index: PitIndex, seeds: number, pulse = false): void {
     this.shown[index] = seeds;
-    const slot = this.slots[index];
-    slot.label.setText(this.shownDead[index] ? '×' : String(seeds));
+    this.showCount(index);
     this.showSeeds(index);
     if (pulse && !this.reducedMotion && !this.skipRequested) this.piles.bounce(index);
+  }
+
+  /** The number of a slot; a dead pit has a lid instead. */
+  private showCount(index: PitIndex): void {
+    this.slots[index].label.setText(this.shown[index]).setVisible(!this.shownDead[index]);
   }
 
   /** The marbles of a slot (none when seeds are shown as numbers). */
@@ -728,7 +743,9 @@ export class GameScene extends Phaser.Scene {
 
   private setDead(index: PitIndex, dead: boolean): void {
     this.shownDead[index] = dead;
-    this.slots[index].label.setText(dead ? '×' : String(this.shown[index]));
+    this.showCount(index);
+    if (dead) this.lids.close(index, this.reducedMotion || this.skipRequested ? 0 : Math.max(this.speed, 1));
+    else this.lids.open(index);
     this.refreshPitStyles();
   }
 
@@ -740,8 +757,7 @@ export class GameScene extends Phaser.Scene {
       if (isStore(i)) return;
       const shape = slot.shape;
       if (this.shownDead[i]) {
-        shape.setFillStyle(COLORS.dead, 0.7).setStrokeStyle(1, COLORS.dead);
-        slot.label.setColor(CSS.dim);
+        shape.setFillStyle(COLORS.gold, 0).setStrokeStyle();
         return;
       }
       slot.label.setColor(CSS.cream);
@@ -787,9 +803,11 @@ export class GameScene extends Phaser.Scene {
     if (this.reducedMotion) return;
     const shape = this.slots[pit].shape;
     const x = slotPosition(pit).x;
-    this.tweens.killTweensOf(shape);
-    shape.setX(x);
-    this.tweens.add({ targets: shape, x: x + 2, duration: 40, yoyo: true, repeat: 2, onComplete: () => shape.setX(x) });
+    const lid = this.lids.at(pit);
+    const shaken = lid ? [shape, lid] : [shape];
+    this.tweens.killTweensOf(shaken);
+    for (const s of shaken) s.setX(x);
+    this.tweens.add({ targets: shaken, x: x + 2, duration: 40, yoyo: true, repeat: 2, onComplete: () => shaken.forEach((s) => s.setX(x)) });
   }
 
   // ── Animation helpers ──────────────────────────────────────────────────────

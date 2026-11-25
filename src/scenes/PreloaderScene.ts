@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { loadGameFont } from '../display/fonts';
+import { LID_FRAME, LID_TEXTURE } from '../display/deadLids';
 import { HAND_FRAME, HAND_TEXTURE } from '../display/sowingHand';
 import { SceneKeys } from '../types/scenes';
 
@@ -22,6 +23,7 @@ export class PreloaderScene extends Phaser.Scene {
     this.load.image('bamboo', 'assets/bamboo.png');
     this.load.image('board', 'assets/board.png');
     this.load.spritesheet('seeds', 'assets/seeds.png', { frameWidth: 8, frameHeight: 8 });
+    this.load.spritesheet(LID_TEXTURE, 'assets/lid.png', { frameWidth: LID_FRAME, frameHeight: LID_FRAME });
     this.load.spritesheet(HAND_TEXTURE, 'assets/hand.png', { frameWidth: HAND_FRAME.width, frameHeight: HAND_FRAME.height });
   }
 
