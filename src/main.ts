@@ -27,7 +27,8 @@ const config: Phaser.Types.Core.GameConfig = {
   parent: CONTAINER_ID,
   width: BASE_WIDTH,
   height: BASE_HEIGHT,
-  backgroundColor: '#1E1A2B',
+  // The colour outside the game (style.css), so no frame shows while it loads.
+  backgroundColor: '#100D18',
   pixelArt: true,
   roundPixels: true,
   // Gamepad support (GDD §3.8.1): see src/input/gamepad.ts.

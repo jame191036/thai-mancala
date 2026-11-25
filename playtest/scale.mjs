@@ -22,6 +22,7 @@ export default [
   },
   { name: 'tab icons answered', action: 'waitFor', expression: `window.__icons !== undefined`, timeout: 3000 },
   { name: 'tab icons of 16 and 32 px, Thai page', action: 'expect', expect: { expression: `[window.__icons, document.documentElement.lang]`, equals: [[['16x16', '16x16'], ['32x32', '32x32']], 'th'] } },
+  { name: 'the colour outside the game is the one the backgrounds sink into', action: 'expect', expect: { expression: `[getComputedStyle(document.body).backgroundColor, game.config.backgroundColor.rgba.replace(/\s/g, '')]`, equals: ['rgb(16, 13, 24)', 'rgba(16,13,24,1)'] } },
   {
     name: 'canvas backing store is the 480×270 base resolution',
     action: 'expect',

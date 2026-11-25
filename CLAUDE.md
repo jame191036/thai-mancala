@@ -75,7 +75,7 @@
   | Wood mid | `#8B5A2B` | | Text cream | `#F3E9D2` |
   | Wood light | `#C08A4E` | | P1 (ล่าง) ▲ | `#3FA7B5` |
   | Pit shadow | `#3A2416` | | P2 (บน) ● | `#E07A3A` |
-  | Dead pit | `#8C2F39` | | | |
+  | Dead pit | `#8C2F39` | | นอกเกม (ขอบพื้นหลังเมนูมืดลงเป็นสีนี้) | `#100D18` |
 
 - **ขนาด sprite**
 
@@ -181,7 +181,7 @@
 
 ## สถานะปัจจุบัน
 - มี GDD v0.2 และ acceptance criteria แล้ว
-- Scaffold Phaser 4 เสร็จแล้ว `npm run verify` ผ่าน (unit 249, playtest 445, touch 25)
+- Scaffold Phaser 4 เสร็จแล้ว `npm run verify` ผ่าน (unit 249, playtest 446, touch 25)
   - **verify ไม่นิ่งเป็นบางรอบ น่าจะเพราะ RAM เครื่องไม่พอ** (2026-11-25 ตอนเหลือราว 450 MB Chrome ฟ้อง `ERR_INSUFFICIENT_RESOURCES` พร้อม context lost และหน้าโหลดไม่ขึ้น พอเหลือราว 1 GB ผ่านหมด แต่ยังมี warning context lost บ้าง) **ก่อนรัน verify ให้ปิดโปรแกรมที่กิน RAM และ dev server ที่ไม่ใช้:** เคยเจอ warning "WebGL context lost", หน้าค้างราว 0.5 วินาทีจน playtest จอยพลาดปุ่ม 3 ข้อ และ harness จบด้วย exit 2 หนึ่งครั้ง ดูได้จากเช็ก "within 100ms" ที่ใช้เวลาหลายร้อย ms ให้รันซ้ำก่อนสรุปว่าเป็นบั๊ก **`ERR_ABORTED` ของ `ai.worker`** เจอ 1 ครั้ง (2026-11-25) ทำซ้ำได้เฉพาะเมื่อโหลดหน้าใหม่ภายในราว 60 ms หลังเริ่มเกมกับ AI ส่วนการปิด worker ตอนกำลังโหลดไม่ทำให้เกิด (วัดแล้ว 2026-11-24 ว่ากระดานใหม่ไม่ได้ทำให้เฟรมช้าลง)
 - **M0 rules engine เสร็จแล้ว** (`src/logic/`) ผ่าน F1–F16, AC-R1–R19 และ fuzz test (เกมสั้นและเกมเต็มที่สุ่มเล่นจบทุกเกม)
 - **GameScene เล่นได้ครบด้วยกราฟิกชั่วคราว** (วงกลม + ตัวเลข)

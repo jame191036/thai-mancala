@@ -112,7 +112,19 @@ function yard() {
   return b;
 }
 
-const bg = { night: night(), yard: yard() };
+/** The edges sink into the colour outside the game (style.css), so no frame shows round them. */
+const OUTSIDE = NIGHT[0], FADE = 26, STEPS = 8;
+const sink = (b) => {
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    // Rounded corners: the two nearest edges add up.
+    const ex = P.clamp(1 - Math.min(x, W - 1 - x) / FADE), ey = P.clamp(1 - Math.min(y, H - 1 - y) / FADE), t = Math.min(1, Math.hypot(ex, ey));
+    if (t <= 0) continue;
+    const k = P.band(Math.min(0.999, t * t * (3 - 2 * t)), STEPS, x, y, 0.35) / (STEPS - 1);
+    b.pset(x, y, P.mix(P.unpack(b.px[y * W + x]), OUTSIDE, k));
+  }
+  return b;
+};
+const bg = { night: sink(night()), yard: sink(yard()) };
 let worst = 99;
 for (const c of new Set(bg.night.px)) worst = Math.min(worst, contrast(DIM, P.unpack(c).slice(0, 3)));
 if (worst < 3.5) throw new Error(`bg-night is too bright for the dim text: contrast ${worst.toFixed(2)}`);
