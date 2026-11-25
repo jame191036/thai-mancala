@@ -4,6 +4,7 @@ import { createGame, isLegalMove, legalMoves, playMove, randomPlayer, startNextR
 import type { GameState, PitIndex, Player, Step } from '../logic/types';
 import { LAYOUT, countPosition, slotPosition } from '../display/boardLayout';
 import { DeadLids } from '../display/deadLids';
+import { Portrait, TALK_MS } from '../display/portrait';
 import { SowingHand, type HandPose } from '../display/sowingHand';
 import { seedSpots } from '../display/seedLayout';
 import { FLYING_FRAME, SEEDS_TEXTURE, SEED_ORIGIN, SeedPiles } from '../display/seedPiles';
@@ -21,6 +22,7 @@ import {
 } from '../types/scenes';
 import { AiClient } from '../ai/AiClient';
 import type { AiLevel } from '../ai/ai';
+import type { Mood, TalkEvent } from '../characters';
 import { onKeyDown } from '../input/keys';
 import { connectedPadCount, onPadAction, onPadDisconnected, rumble, type PadAction } from '../input/gamepad';
 import {
@@ -96,6 +98,8 @@ export class GameScene extends Phaser.Scene {
   private slots: SlotView[] = [];
   private piles!: SeedPiles;
   private lids!: DeadLids;
+  /** The AI's face and speech bubble (none between two people). */
+  private portrait: Portrait | null = null;
   /** What the screen currently shows (follows the steps during an animation). */
   private shown: number[] = [];
   private shownDead: boolean[] = [];
@@ -236,6 +240,11 @@ export class GameScene extends Phaser.Scene {
     return { visible: this.hand.body.visible, player: this.hand.player, pose: this.hand.pose };
   }
 
+  /** The AI's face right now (read by playtests); null between two people. */
+  portraitState(): { mood: Mood; line: string } | null {
+    return this.portrait && { mood: this.portrait.mood, line: this.portrait.line };
+  }
+
   /** Every count is written inside its own bowl (seeds shown as numbers). */
   countsInBowls(): boolean {
     return this.slots.every((s) => s.label.x === s.shape.x && s.label.y === s.shape.y);
@@ -252,6 +261,7 @@ export class GameScene extends Phaser.Scene {
     this.skipRequested = true;
     this.tweens.killAll();
     this.lids.finish();
+    this.portrait?.settle();
     this.flushPending();
   }
 
@@ -376,7 +386,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createHud(): void {
-    this.p2Label = this.label(12, 14, '', TEXT_SIZE, CSS.dim, true).setOrigin(0, 0.5);
+    this.portrait =
+      this.opponent === 'human'
+        ? null
+        : new Portrait(this, this.opponent, { x: 8, y: 3, bubble: { x: 10, y: 51 }, still: this.reducedMotion });
+    this.p2Label = (this.portrait ? this.label(46, 17, '', 16, CSS.dim, true) : this.label(12, 14, '', TEXT_SIZE, CSS.dim, true)).setOrigin(0, 0.5);
     // Upside down, the text must grow to the right of x from its other end.
     if (this.facing) this.p2Label.setOrigin(1, 0.5).setRotation(Math.PI);
     this.roundLabel = this.label(240, 14, '', TEXT_SIZE, CSS.dim).setOrigin(0.5);
@@ -620,6 +634,7 @@ export class GameScene extends Phaser.Scene {
         await this.flySeeds(step.opposite, store, step.toStore);
         this.setShown(store, this.shown[store] + step.toStore, true);
         this.showBanner(`กิน! +${step.toStore}`, PLAYER_CSS[step.player]);
+        this.talk(step.player === AI_PLAYER ? 'capture' : 'captured');
         this.buzz(step.player);
         await this.wait(this.pauseMs(400));
         break;
@@ -630,6 +645,7 @@ export class GameScene extends Phaser.Scene {
         // `this.state` already holds the result of the move being animated.
         if (this.state.phase !== 'playing') break;
         this.showBanner(`${this.names[step.player]} ได้เดินอีกตา!`, PLAYER_CSS[step.player]);
+        if (step.player === AI_PLAYER) this.talk('extraTurn');
         await this.wait(this.pauseMs(600));
         break;
 
@@ -777,7 +793,7 @@ export class GameScene extends Phaser.Scene {
     const active: Player | null = this.busy ? this.sowingPlayer : s.phase === 'playing' ? s.current : null;
     const label = (p: Player) => `${active === p ? '▶ ' : ''}${this.names[p]}`;
     this.p1Label.setText(`${label(0)}  (แถวล่าง)`).setColor(active === 0 ? PLAYER_CSS[0] : CSS.dim);
-    this.p2Label.setText(`${label(1)}  (แถวบน)`).setColor(active === 1 ? PLAYER_CSS[1] : CSS.dim);
+    this.p2Label.setText(this.portrait ? label(1) : `${label(1)}  (แถวบน)`).setColor(active === 1 ? PLAYER_CSS[1] : CSS.dim);
     const mode = s.mode === 'full' ? `รอบ ${s.round}/${s.maxRounds}` : 'เกมสั้น';
     this.roundLabel.setText(`${mode} · ${RULESET_NAME[s.ruleset]}`);
     this.speedButton.setText(this.speedText());
@@ -789,6 +805,11 @@ export class GameScene extends Phaser.Scene {
           : `ตาของ${this.names[s.current]}: เลือกหลุมฝั่งตัวเองที่มีเม็ด`,
     );
     this.refreshPitStyles();
+  }
+
+  /** The AI reacts to what just happened on the board. */
+  private talk(event: TalkEvent): void {
+    if (!this.skipRequested) this.portrait?.say(event, TALK_MS);
   }
 
   private showBanner(text: string, color: string): void {

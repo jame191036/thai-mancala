@@ -81,7 +81,9 @@ const DIGIT_HEIGHT = '0123456789P';
 const LETTERS = typeof Intl !== 'undefined' && 'Segmenter' in Intl ? new Intl.Segmenter('th', { granularity: 'grapheme' }) : undefined;
 
 /** At TEXT_SIZE these look alike; this far off the whole pixel each keeps its own head or tail. */
-const NUDGE: Readonly<Record<string, number>> = { ข: 0.4, ช: 0.2, ซ: 0.2 };
+const NUDGE: Readonly<Record<string, number>> = { ข: 0.4, ช: 0.2, ซ: 0.2, '!': 0.25 };
+/** At TEXT_SIZE the dot of "!" runs into its stroke: drawn fainter, the gap stays open. */
+const FAINTER: Readonly<Record<string, number>> = { '!': 0.6 / 0.7 };
 
 /**
  * Every letter starts on a whole pixel. Drawn as one line, the same letter falls on different
@@ -121,7 +123,10 @@ function renderLetters(text: string, style: PixelTextStyle): HTMLCanvasElement {
   ctx.font = cssFont(style); // resizing the canvas resets the context
   ctx.fillStyle = '#fff';
   ctx.textBaseline = 'alphabetic';
-  for (const l of letters) ctx.fillText(l.s, pad + left + l.x, pad + ascent);
+  for (const l of letters) {
+    ctx.globalAlpha = style.size === TEXT_SIZE ? (FAINTER[l.s] ?? 1) : 1;
+    ctx.fillText(l.s, pad + left + l.x, pad + ascent);
+  }
   const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
   img.data.set(
     binarize(img.data, canvas.width, canvas.height, thresholdOf(style), hexToRgb(style.color), style.outline ? hexToRgb(style.outline) : undefined),

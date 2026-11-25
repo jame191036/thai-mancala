@@ -75,7 +75,7 @@ const GS = `scene('GameScene')`;
 const BANNERS = (a, b) => ['เล่นต่อจากที่บันทึกไว้', `${a} เริ่มก่อน`, `${b} ได้เดินอีกตา!`, `หลุมฝั่ง${b}หมด: จบรอบ`, `${b} ไม่มีเม็ด ข้ามตา`, 'จบรอบ 7   88 : 10', `รอบที่ 7/7: ${b} เริ่ม`, 'หว่านต่อ 88 เม็ด'];
 const MESSAGES = (a, b) => [`ตาของ${a}: เลือกหลุมฝั่งตัวเองที่มีเม็ด`, `${b} กำลังหว่าน · แตะ/คลิกที่ใดก็ได้เพื่อข้าม`, 'แตะหลุมเดิมอีกครั้ง หรือกด Enter เพื่อหว่าน', `รอ ${b} เดิน`];
 const gameScreen = (what, { style, opponent, ruleset, facing = false, first = 0 }) => {
-  const [a, b] = opponent === 'human' ? ['ผู้เล่น 1', 'ผู้เล่น 2'] : ['คุณ', 'AI กลาง'];
+  const [a, b] = opponent === 'human' ? ['ผู้เล่น 1', 'ผู้เล่น 2'] : ['คุณ', { easy: 'น้องแก้ว', medium: 'ลุงเคี่ยม', hard: 'ยายขุม' }[opponent]];
   return [
     run(`game.registry.set('boardStyle', '${style}'); game.registry.set('facing', ${facing}); game.registry.set('sowSpeed', 4);`),
     ...go('GameScene', { mode: 'full', maxRounds: 7, ruleset, opponent, firstPlayer: first }),
@@ -87,6 +87,8 @@ const gameScreen = (what, { style, opponent, ruleset, facing = false, first = 0 
       expect: {
         expression: `(() => { const s = ${GS}; s.slots.forEach((o) => o.label.setText('88')); s.tweens.killTweensOf(s.banner); s.banner.setAlpha(1);
           const bad = [];
+          for (const e of s.portrait ? ['capture', 'captured', 'extraTurn'] : []) { s.portrait.say(e); s.portrait.settle(); const r = __layout('GameScene'); if (r !== 'ok') bad.push(e, r); }
+          if (s.portrait) { s.portrait.say('extraTurn'); s.portrait.settle(); }
           for (const t of ${JSON.stringify(BANNERS(a, b))}) { s.banner.setText(t); const r = __layout('GameScene'); if (r !== 'ok') bad.push(t, r); }
           for (const t of ${JSON.stringify(MESSAGES(a, b))}) { s.messageLabel.setText(t); const r = __layout('GameScene'); if (r !== 'ok') bad.push(t, r); }
           return bad.length ? bad : 'ok'; })()`,
@@ -132,8 +134,11 @@ export default [
   ...['singleRound', 'roundLimit', 'cannotFill', 'resigned'].flatMap((reason) => [
     ...go('GameOverScene', result(reason, 'traditional', 'human', 0)),
     check(`result, ${reason}, 2 people`),
-    ...go('GameOverScene', result(reason, 'video', 'medium', 1)),
-    check(`result, ${reason}, AI`),
+    ...['easy', 'medium', 'hard'].flatMap((ai, n) => [
+      ...go('GameOverScene', result(reason, 'video', ai, n % 2)),
+      { name: 'the bubble settles', action: 'wait', ms: 150 },
+      check(`result, ${reason}, ${ai} AI`),
+    ]),
   ]),
   ...go('GameOverScene', result('cannotFill', 'traditional', 'human', null)),
   check('result, draw'),
@@ -141,7 +146,7 @@ export default [
   shot('result'),
 
   // ── Game: the three board styles, both opponents, facing each other ──
-  ...gameScreen('marbles, AI', { style: 'marbles', opponent: 'medium', ruleset: 'video' }),
+  ...['easy', 'medium', 'hard'].flatMap((opponent) => gameScreen(`marbles, ${opponent} AI`, { style: 'marbles', opponent, ruleset: 'video' })),
   ...gameScreen('hand, 2 people', { style: 'hand', opponent: 'human', ruleset: 'traditional', first: 1 }),
   ...gameScreen('numbers, 2 people facing', { style: 'numbers', opponent: 'human', ruleset: 'video', facing: true, first: 1 }),
 

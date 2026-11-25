@@ -1,9 +1,12 @@
 import Phaser from 'phaser';
 import { CSS, PLAYER_CSS } from '../display/palette';
 import { TEXT_SIZE, addPixelText, type PixelText } from '../display/pixelText';
+import { Portrait } from '../display/portrait';
 import { onKeyDown } from '../input/keys';
 import { onPadAction } from '../input/gamepad';
+import { REDUCED_MOTION, loadFlag } from '../settings';
 import {
+  AI_PLAYER,
   RULESET_NAME,
   RULESET_SUMMARY,
   SceneKeys,
@@ -28,6 +31,8 @@ export class GameOverScene extends Phaser.Scene {
   result!: GameOverData;
   /** Focused button (read by playtests). */
   focus: GameOverChoice = 'rematch';
+  /** The AI's face and last words (none between two people; read by playtests). */
+  portrait: Portrait | null = null;
   private buttons = new Map<GameOverChoice, PixelText>();
   private leaving = false;
 
@@ -47,10 +52,16 @@ export class GameOverScene extends Phaser.Scene {
       addPixelText(this, width / 2, y, s, { size, color, bold });
 
     const title = data.winner === null ? 'เสมอ!' : `${names[data.winner]} ชนะ!`;
-    text(36, title, 32, data.winner === null ? CSS.gold : PLAYER_CSS[data.winner]);
+    text(34, title, 32, data.winner === null ? CSS.gold : PLAYER_CSS[data.winner]);
     text(80, `${names[0]}  ${data.stores[0]} : ${data.stores[1]}  ${names[1]}`, 16, CSS.cream);
     text(110, reasonText(data, names), TEXT_SIZE, CSS.dim, false);
     text(135, `${RULESET_NAME[data.ruleset]}: ${RULESET_SUMMARY[data.ruleset]}`, TEXT_SIZE, CSS.dim, false);
+
+    this.portrait = null;
+    if (data.opponent !== 'human') {
+      this.portrait = new Portrait(this, data.opponent, { x: 16, y: 10, bubble: { x: 18, y: 58 }, still: loadFlag(this.registry, REDUCED_MOTION) });
+      this.portrait.say(data.winner === null ? 'draw' : data.winner === AI_PLAYER ? 'win' : 'lose');
+    }
 
     // This game's records (GDD §7 Result). The video rules have no relays (R17).
     const r = data.records;

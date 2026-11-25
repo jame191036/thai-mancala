@@ -1,5 +1,6 @@
 import type { GameEndReason, GameMode, Player, Ruleset } from '../logic/types';
 import type { AiLevel } from '../ai/ai';
+import { CHARACTERS } from '../characters';
 import { PLAYER_NAME } from '../display/palette';
 import type { SavedGame } from '../save';
 import type { GameRecords } from '../stats';
@@ -10,6 +11,7 @@ export const OPPONENTS: readonly Opponent[] = ['human', 'easy', 'medium', 'hard'
 /** The AI always plays P2. */
 export const AI_PLAYER: Player = 1;
 
+/** On the menu and the statistics. */
 export const OPPONENT_LABEL: Record<Opponent, string> = {
   human: '2 คน',
   easy: 'AI ง่าย',
@@ -17,9 +19,9 @@ export const OPPONENT_LABEL: Record<Opponent, string> = {
   hard: 'AI ยาก',
 };
 
-/** Names shown for [P1, P2]. */
+/** Names shown for [P1, P2] in a game and its result; the AI goes by its character's name. */
 export function playerNames(opponent: Opponent): readonly [string, string] {
-  return opponent === 'human' ? PLAYER_NAME : ['คุณ', OPPONENT_LABEL[opponent]];
+  return opponent === 'human' ? PLAYER_NAME : ['คุณ', CHARACTERS[opponent].name];
 }
 
 /** Scene keys: use these instead of string literals so typos fail to compile. */
