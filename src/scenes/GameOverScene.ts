@@ -52,7 +52,7 @@ export class GameOverScene extends Phaser.Scene {
       addPixelText(this, width / 2, y, s, { size, color, bold });
 
     const title = data.winner === null ? 'เสมอ!' : `${names[data.winner]} ชนะ!`;
-    text(34, title, 32, data.winner === null ? CSS.gold : PLAYER_CSS[data.winner]);
+    text(32, title, 32, data.winner === null ? CSS.gold : PLAYER_CSS[data.winner]);
     text(80, `${names[0]}  ${data.stores[0]} : ${data.stores[1]}  ${names[1]}`, 16, CSS.cream);
     text(110, reasonText(data, names), TEXT_SIZE, CSS.dim, false);
     text(135, `${RULESET_NAME[data.ruleset]}: ${RULESET_SUMMARY[data.ruleset]}`, TEXT_SIZE, CSS.dim, false);

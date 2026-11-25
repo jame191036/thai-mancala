@@ -29,10 +29,10 @@ export class CreditsScene extends Phaser.Scene {
 
     line(106, 'แหล่งอ้างอิงกติกา', CSS.gold, TEXT_SIZE, true);
     line(123, 'บันทึกหมากขุมไทย ค.ศ. 1836 · Ludii Portal (ludii.games)');
-    line(141, 'THAILEX: mahk khum (หมากขุม) · thailex.info');
+    line(140, 'THAILEX: mahk khum (หมากขุม) · thailex.info');
     line(160, 'แบบตามวิดีโอ: youtube.com/watch?v=ZwP1hlU_m_c');
 
-    line(184, 'งานภาพ: กระดานและลูกแก้ววาดขึ้นใหม่สำหรับเกมนี้ · เสียง: ยังไม่มี', CSS.dim);
+    line(182, 'งานภาพ: กระดานและลูกแก้ววาดขึ้นใหม่สำหรับเกมนี้ · เสียง: ยังไม่มี', CSS.dim);
     line(208, 'ไม่ได้ลอกลายหรือภาพจากงานที่มีลิขสิทธิ์', CSS.dim);
 
     const back = addButton(this, width / 2, CREDITS_LAYOUT.backY, 'กลับ', { width: 90, onClick: () => this.leave() });

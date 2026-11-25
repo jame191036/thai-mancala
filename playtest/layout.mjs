@@ -1,5 +1,6 @@
 // Text layout on every screen: nothing leaves the 480×270 screen, and no two texts or
-// buttons touch. Measured on the pixels actually drawn (Thai vowels and tone marks above and
+// buttons touch. SLACK is kept free around everything, because fonts are drawn a pixel higher or
+// lower on other systems (CI's Linux, phones, Macs) than on the machine this was laid out on. Measured on the pixels actually drawn (Thai vowels and tone marks above and
 // below the line count), with the longest texts each screen can show.
 import { reachMenu } from './lib/common.mjs';
 
@@ -28,6 +29,7 @@ const INSTALL = `
     }
     return ink.get(tex.key);
   };
+  const SLACK = 2, EDGE = 1;
   window.__layout = (key) => {
     const items = [];
     for (const o of game.scene.getScene(key).children.list) {
@@ -41,9 +43,9 @@ const INSTALL = `
     const bad = [];
     const box = (a) => a.s.slice(0, 24) + ' [' + [a.l, a.t, a.r, a.b].map((v) => Math.round(v)).join(',') + ']';
     items.forEach((a, n) => {
-      if (a.l < 0 || a.t < 0 || a.r > 480 || a.b > 270) bad.push('off screen: ' + box(a));
+      if (a.l < EDGE || a.t < EDGE || a.r > 480 - EDGE || a.b > 270 - EDGE) bad.push('off screen: ' + box(a));
       for (const c of items.slice(n + 1)) {
-        if (a.l < c.r + 1 && c.l < a.r + 1 && a.t < c.b + 1 && c.t < a.b + 1) bad.push('touching: ' + box(a) + ' + ' + box(c));
+        if (a.l < c.r + SLACK && c.l < a.r + SLACK && a.t < c.b + SLACK && c.t < a.b + SLACK) bad.push('touching: ' + box(a) + ' + ' + box(c));
       }
     });
     return bad.length ? bad : 'ok';

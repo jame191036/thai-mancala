@@ -1,7 +1,7 @@
 import { reachMenu } from './lib/common.mjs';
 // Pause menu and save/resume (GDD §7 pause, AC-S1): play a few moves, pause, resume,
 // go back to the menu, RELOAD THE PAGE, continue the saved game exactly, then resign.
-// In-game "≡ พักเกม" button: right-aligned at base (468, 231) → click (440, 231) ×2.
+// In-game "≡ พักเกม" button: right-aligned at base (468, 227) → click (440, 227) ×2.
 const GS = `scene('GameScene')`;
 const PAUSED = `game.scene.isActive('PauseScene') && game.scene.isPaused('GameScene')`;
 
@@ -41,7 +41,7 @@ export default [
   { name: 'remember the board', action: 'eval', code: `sessionStorage.setItem('__expect', JSON.stringify(${GS}.state));` },
 
   // Pause with the on-screen button, resume with Esc.
-  { name: 'click "≡ พักเกม"', action: 'click', x: 2 * 440, y: 2 * 231 },
+  { name: 'click "≡ พักเกม"', action: 'click', x: 2 * 440, y: 2 * 227 },
   { name: 'pause menu open, game frozen', action: 'waitFor', expression: PAUSED, timeout: 2000 },
   { name: 'pause-menu', action: 'screenshot' },
   { name: 'Esc resumes', action: 'press', key: 'Escape' },

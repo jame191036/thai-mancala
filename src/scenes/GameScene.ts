@@ -400,9 +400,9 @@ export class GameScene extends Phaser.Scene {
     this.speedButton.on('pointerdown', () => this.cycleSpeed());
 
     this.banner = this.label(240, 45, '', 14, CSS.gold, true).setOrigin(0.5).setAlpha(0);
-    this.p1Label = this.label(12, 231, '', TEXT_SIZE, CSS.dim, true).setOrigin(0, 0.5);
-    this.messageLabel = this.label(240, 257, '', TEXT_SIZE, CSS.cream).setOrigin(0.5);
-    this.pauseButton = this.label(468, 231, '≡ พักเกม', TEXT_SIZE, CSS.gold, true)
+    this.p1Label = this.label(12, 227, '', TEXT_SIZE, CSS.dim, true).setOrigin(0, 0.5);
+    this.messageLabel = this.label(240, 255, '', TEXT_SIZE, CSS.cream).setOrigin(0.5);
+    this.pauseButton = this.label(468, 227, '≡ พักเกม', TEXT_SIZE, CSS.gold, true)
       .setOrigin(1, 0.5)
       .setInteractive({ useHandCursor: true });
     this.pauseButton.on('pointerdown', () => this.openPause());

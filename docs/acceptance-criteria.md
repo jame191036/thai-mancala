@@ -106,7 +106,7 @@
   - ทุกข้อความใช้ Mali แบบ 1 บิต ไม่เหลือ Phaser `Text` (`tests/pixel-text-only.test.ts`)
   - ฟอนต์โหลดได้บน production build ที่มี CSP (`scale.mjs`)
   - ข้อความไทยมีขนาดอย่างน้อย 13 px
-  - ไม่มีข้อความทับกันหรือล้นจอในทุกหน้า (`layout.mjs`)
+  - ไม่มีข้อความทับกันหรือล้นจอในทุกหน้า และเว้นกันอย่างน้อย 2 px (`layout.mjs`)
 
 ## Human review required (ทดสอบอัตโนมัติไม่ได้)
 
