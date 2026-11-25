@@ -34,10 +34,11 @@ import {
   type Opponent,
 } from '../types/scenes';
 import { Dropdown } from '../ui/dropdown';
+import { addLogo } from '../ui/widgets';
 
 /** Positions (base px). Playtests click these, so keep them in sync with playtest/*.mjs. */
 export const MENU_LAYOUT = {
-  titleY: 8,
+  logoY: 0,
   continueY: 18,
   opponentY: 54,
   opponentX: [150, 220, 290, 360],
@@ -133,7 +134,7 @@ export class MainMenuScene extends Phaser.Scene {
     const L = MENU_LAYOUT;
     const { width } = this.scale;
 
-    this.text(width / 2, L.titleY, 'หมากขุม', 30, CSS.gold);
+    addLogo(this, 'logo-small', L.logoY);
 
     // ── Continue a saved game (only when one exists) ──
     const saved = loadSavedGame();

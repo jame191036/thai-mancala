@@ -527,7 +527,7 @@ ROUND_END
 | ui_button_prompts | Atlas | 12×12 | ≈ 10 (ตำแหน่งปุ่มจอย, D-pad, ปุ่มคีย์บอร์ด) | PNG (atlas) |
 | ui_panel | 9-slice | 48×48 | 1 | PNG (atlas) |
 | favicon (ไอคอนแท็บ: หลุมไม้กับลูกแก้ว 3 สี) | Static | 16×16 และ 32×32 วาดแยกกัน | 1 | PNG |
-| title_logo | Static | ≈ 220×64 | 1 | PNG |
+| logo (โลโก้ "หมากขุม" ตัวทอง หัวตัวอักษรเป็นหลุมมีลูกแก้ว หัวของ ข ใช้รูปหัว ม เจ้าของเลือก 2026-11-25) | Static | 219×64 (หน้า Title) และ 135×42 (เมนู วาดแยก ไม่ได้ย่อ) | 1 | PNG |
 | turn_marker_p1 / p2 | Static | 8×8 | 1 | PNG (atlas) |
 | particles (ประกาย, ฝุ่น) | Spritesheet | 4×4 | 4 | PNG (atlas) |
 

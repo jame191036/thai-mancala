@@ -1,4 +1,4 @@
-// Text layout on every screen: nothing leaves the 480×270 screen, and no two texts or
+// Text (and logo) layout on every screen: nothing leaves the 480×270 screen, and no two texts or
 // buttons touch. SLACK is kept free around everything, because fonts are drawn a pixel higher or
 // lower on other systems (CI's Linux, phones, Macs) than on the machine this was laid out on. Measured on the pixels actually drawn (Thai vowels and tone marks above and
 // below the line count), with the longest texts each screen can show.
@@ -33,12 +33,13 @@ const INSTALL = `
   window.__layout = (key) => {
     const items = [];
     for (const o of game.scene.getScene(key).children.list) {
-      if (typeof o.text !== 'string' || o.text === '' || !o.visible || o.alpha === 0) continue;
+      const logo = /^logo/.test(o.texture?.key ?? '');
+      if ((!logo && (typeof o.text !== 'string' || o.text === '')) || !o.visible || o.alpha === 0) continue;
       const i = inkOf(o.texture);
       let l = i.l - o.originX * o.width, r = i.r - o.originX * o.width;
       let t = i.t - o.originY * o.height, b = i.b - o.originY * o.height;
       if (Math.abs(o.rotation) > 1) [l, r, t, b] = [-r, -l, -b, -t]; // upside down
-      items.push({ s: o.text, l: o.x + l, r: o.x + r, t: o.y + t, b: o.y + b });
+      items.push({ s: logo ? o.texture.key : o.text, l: o.x + l, r: o.x + r, t: o.y + t, b: o.y + b });
     }
     const bad = [];
     const box = (a) => a.s.slice(0, 24) + ' [' + [a.l, a.t, a.r, a.b].map((v) => Math.round(v)).join(',') + ']';
@@ -107,8 +108,10 @@ export default [
   // ── Title, menu ──
   ...go('TitleScene'),
   check('title'),
+  { name: 'the logo is on the title screen, on whole pixels', action: 'expect', expect: { expression: `scene('TitleScene').children.list.filter((o) => o.texture?.key === 'logo').map((o) => [o.x, o.y, o.width, o.height])`, equals: [[131, 38, 219, 64]] } },
   ...go('MainMenuScene'),
   check('menu, traditional rules'),
+  { name: 'the small logo is on the menu, on whole pixels', action: 'expect', expect: { expression: `scene('MainMenuScene').children.list.filter((o) => o.texture?.key === 'logo-small').map((o) => [o.x, o.y, o.width, o.height])`, equals: [[173, 0, 135, 42]] } },
   run(`scene('MainMenuScene').ruleset = 'video'; scene('MainMenuScene').mode = 'full'; scene('MainMenuScene').rounds = 7; scene('MainMenuScene').refreshAll();`),
   check('menu, video rules, 7 rounds'),
   shot('menu'),

@@ -13,6 +13,12 @@ export function addText(scene: Phaser.Scene, x: number, y: number, text: string,
   return addPixelText(scene, x, y, text, { size, color, bold });
 }
 
+/** The logo with its top edge at `y`, centred on whole pixels (its width is odd). */
+export function addLogo(scene: Phaser.Scene, key: 'logo' | 'logo-small', y: number): Phaser.GameObjects.Image {
+  const logo = scene.add.image(0, y, key).setOrigin(0);
+  return logo.setX(Math.round((scene.scale.width - logo.width) / 2));
+}
+
 export interface ButtonOptions {
   width?: number;
   size?: number;
