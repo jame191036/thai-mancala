@@ -13,6 +13,11 @@ export function addText(scene: Phaser.Scene, x: number, y: number, text: string,
   return addPixelText(scene, x, y, text, { size, color, bold });
 }
 
+/** The picture behind a menu screen: `bg-yard` (title, menu) or `bg-night` (pages full of text). Call it first. */
+export function addBackground(scene: Phaser.Scene, key: 'bg-yard' | 'bg-night'): void {
+  scene.add.image(0, 0, key).setOrigin(0);
+}
+
 /** The logo with its top edge at `y`, centred on whole pixels (its width is odd). */
 export function addLogo(scene: Phaser.Scene, key: 'logo' | 'logo-small', y: number): Phaser.GameObjects.Image {
   const logo = scene.add.image(0, y, key).setOrigin(0);

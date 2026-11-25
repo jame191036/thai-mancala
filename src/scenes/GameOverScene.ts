@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { CSS, PLAYER_CSS } from '../display/palette';
 import { TEXT_SIZE, addPixelText, type PixelText } from '../display/pixelText';
 import { Portrait } from '../display/portrait';
+import { addBackground } from '../ui/widgets';
 import { onKeyDown } from '../input/keys';
 import { onPadAction } from '../input/gamepad';
 import { REDUCED_MOTION, loadFlag } from '../settings';
@@ -51,6 +52,7 @@ export class GameOverScene extends Phaser.Scene {
     const text = (y: number, s: string, size: number, color: string, bold = true) =>
       addPixelText(this, width / 2, y, s, { size, color, bold });
 
+    addBackground(this, 'bg-night');
     const title = data.winner === null ? 'เสมอ!' : `${names[data.winner]} ชนะ!`;
     text(32, title, 32, data.winner === null ? CSS.gold : PLAYER_CSS[data.winner]);
     text(80, `${names[0]}  ${data.stores[0]} : ${data.stores[1]}  ${names[1]}`, 16, CSS.cream);

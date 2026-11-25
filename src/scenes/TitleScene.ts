@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { COLORS, CSS } from '../display/palette';
 import { REDUCED_MOTION, loadFlag } from '../settings';
 import { SceneKeys } from '../types/scenes';
-import { TEXT_SIZE, addLogo, addText } from '../ui/widgets';
+import { TEXT_SIZE, addBackground, addLogo, addText } from '../ui/widgets';
 
 /** Mini row drawn under the logo: 7 pits and a store (base px). */
 const PIT_XS = [150, 180, 210, 240, 270, 300, 330];
@@ -27,6 +27,7 @@ export class TitleScene extends Phaser.Scene {
     const { width } = this.scale;
     const still = loadFlag(this.registry, REDUCED_MOTION);
 
+    addBackground(this, 'bg-yard');
     addLogo(this, 'logo', 38);
     addText(this, width / 2, 116, 'การละเล่นพื้นบ้านไทย · 2 คน หรือเล่นกับ AI', TEXT_SIZE, CSS.cream, false);
 

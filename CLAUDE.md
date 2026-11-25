@@ -105,7 +105,7 @@
 - **บรรยากาศ:** กระดานไม้ทรงเรือวางบนแคร่ไม้ไผ่ เม็ดเป็นลูกแก้ว (เจ้าของเลือกเมื่อ 2026-11-24 ตามรูปอ้างอิง) ใช้ลายกนกที่ออกแบบใหม่เอง ไม่ลอกจากงานที่มีลิขสิทธิ์
 - **Pipeline:** ใช้ skill `codixel` และให้เจ้าของตรวจทุกขั้นก่อนใส่ในเกม
   - กระดาน เม็ด และพื้นหลัง**วาดด้วยโค้ด** ใช้รูปของเจ้าของวัดสัดส่วนกับสีเท่านั้น **ห้ามใส่รูปอ้างอิงลง repo** (ยังไม่รู้ว่าใครถือสิทธิ์)
-  - `node tools/art/board.cjs` สร้าง `public/assets/board.png` และ `seeds.png` ใหม่ แล้วรัน `node tools/art/bamboo.cjs` (เงาใช้รูปทรงกระดาน) และ `node tools/art/hand.cjs` (ใช้ลูกแก้วจาก seeds.png) ต่อ ส่วนฝาหลุมตาย (`node tools/art/lid.cjs`) ตัวละคร AI (`node tools/art/characters.cjs`) โลโก้ (`node tools/art/logo.cjs` ใช้รูปตัวอักษรใน `logo-letters.json` หัวของ ข เป็นรูปหัว ม ตามที่เจ้าของเลือก) และไอคอนแท็บ (`node tools/art/favicon.cjs` ได้ `public/favicon-16.png` กับ `favicon-32.png`) รันแยกได้ ต้องมี codixel ในเครื่อง
+  - `node tools/art/board.cjs` สร้าง `public/assets/board.png` และ `seeds.png` ใหม่ แล้วรัน `node tools/art/bamboo.cjs` (เงาใช้รูปทรงกระดาน) และ `node tools/art/hand.cjs` (ใช้ลูกแก้วจาก seeds.png) ต่อ ส่วนฝาหลุมตาย (`node tools/art/lid.cjs`) ตัวละคร AI (`node tools/art/characters.cjs`) พื้นหลังเมนู (`node tools/art/menubg.cjs`) โลโก้ (`node tools/art/logo.cjs` ใช้รูปตัวอักษรใน `logo-letters.json` หัวของ ข เป็นรูปหัว ม ตามที่เจ้าของเลือก) และไอคอนแท็บ (`node tools/art/favicon.cjs` ได้ `public/favicon-16.png` กับ `favicon-32.png`) รันแยกได้ ต้องมี codixel ในเครื่อง
 - **ตัวอักษรไทย:** ยังเป็นความเสี่ยง ต้องทำ prototype ก่อนตัดสิน (GDD §10) Phaser `Text` ให้ขอบ anti-alias ส่วนตัวเลขใช้ bitmap font
 
 ## การตัดสินใจหลัก (2026-11-23)
@@ -159,7 +159,7 @@
   - `src/characters.ts`: ชื่อ คำพูด และอารมณ์ของตัวละคร AI (ข้อมูลล้วน เจ้าของอนุมัติทุกประโยค **ห้ามแก้คำพูดโดยไม่ถาม**) `playerNames()` คืนชื่อตัวละคร ส่วนเมนูกับสถิติใช้ `OPPONENT_LABEL` ("AI ง่าย / กลาง / ยาก")
   - `src/ai/`: `ai.ts` (`chooseMove(state, level)` มีระดับ easy, medium, hard ไม่ import Phaser), `ai.worker.ts` + `AiClient.ts` (รันใน Web Worker ถ้าใช้ไม่ได้คำนวณบน main thread แทน) AI เล่นเป็น P2 ส่วน GameScene ถาม AI ใน `maybePlayAi()`
   - การประเมินของ AI นับเฉพาะเม็ดในเรือน (`sideWeight` 0 วัดแล้วดีที่สุด) ถ้าจะปรับฝีมือ ให้วัดด้วยการให้ AI แข่งกันก่อน แบบเดียวกับ `tests/ai.test.ts`
-  - `public/assets/`: asset ที่โหลดตอน runtime (`bamboo.png` มีเงากระดานในภาพ, `board.png`, `seeds.png`, `hand.png`, `lid.png`, `faces.png`, `logo.png`, `logo-small.png`) ส่วน UI ยังเป็นกราฟิกชั่วคราว `index.html` ตั้ง `lang="th"` ไม่ให้เบราว์เซอร์เสนอแปลภาษา
+  - `public/assets/`: asset ที่โหลดตอน runtime (`bamboo.png` มีเงากระดานในภาพ, `board.png`, `seeds.png`, `hand.png`, `lid.png`, `faces.png`, `logo.png`, `logo-small.png`, `bg-yard.png`, `bg-night.png`) ส่วน UI ยังเป็นกราฟิกชั่วคราว `index.html` ตั้ง `lang="th"` ไม่ให้เบราว์เซอร์เสนอแปลภาษา
 - **GameScene:** engine คำนวณทั้งตาก่อน แล้ว scene ค่อยเล่น `steps` ทีละ step ด้วย tween จากนั้น snap ให้ตรงกับ state ของ engine
   - ระหว่างหว่าน `state.current` เป็นคนถัดไปแล้ว ป้ายบอกตาจึงต้องใช้ `sowingPlayer`
   - field ที่เป็น public (`state`, `busy`, `choosePit()`, `legalPits()`, `displayedPits()`, `displayedDead()`, `reducedMotion`, `lastMovePit`, `records`, `dropTimes`, `buzzCount`) มีไว้ให้ playtest ใช้
@@ -181,7 +181,7 @@
 
 ## สถานะปัจจุบัน
 - มี GDD v0.2 และ acceptance criteria แล้ว
-- Scaffold Phaser 4 เสร็จแล้ว `npm run verify` ผ่าน (unit 249, playtest 439, touch 25)
+- Scaffold Phaser 4 เสร็จแล้ว `npm run verify` ผ่าน (unit 249, playtest 445, touch 25)
   - **verify ไม่นิ่งเป็นบางรอบ น่าจะเพราะ RAM เครื่องไม่พอ** (2026-11-25 ตอนเหลือราว 450 MB Chrome ฟ้อง `ERR_INSUFFICIENT_RESOURCES` พร้อม context lost และหน้าโหลดไม่ขึ้น พอเหลือราว 1 GB ผ่านหมด แต่ยังมี warning context lost บ้าง) **ก่อนรัน verify ให้ปิดโปรแกรมที่กิน RAM และ dev server ที่ไม่ใช้:** เคยเจอ warning "WebGL context lost", หน้าค้างราว 0.5 วินาทีจน playtest จอยพลาดปุ่ม 3 ข้อ และ harness จบด้วย exit 2 หนึ่งครั้ง ดูได้จากเช็ก "within 100ms" ที่ใช้เวลาหลายร้อย ms ให้รันซ้ำก่อนสรุปว่าเป็นบั๊ก **`ERR_ABORTED` ของ `ai.worker`** เจอ 1 ครั้ง (2026-11-25) ทำซ้ำได้เฉพาะเมื่อโหลดหน้าใหม่ภายในราว 60 ms หลังเริ่มเกมกับ AI ส่วนการปิด worker ตอนกำลังโหลดไม่ทำให้เกิด (วัดแล้ว 2026-11-24 ว่ากระดานใหม่ไม่ได้ทำให้เฟรมช้าลง)
 - **M0 rules engine เสร็จแล้ว** (`src/logic/`) ผ่าน F1–F16, AC-R1–R19 และ fuzz test (เกมสั้นและเกมเต็มที่สุ่มเล่นจบทุกเกม)
 - **GameScene เล่นได้ครบด้วยกราฟิกชั่วคราว** (วงกลม + ตัวเลข)
@@ -203,7 +203,7 @@
     - playtest แตะ 2 ครั้งบนมือถือจำลอง (AC-UI8)
     - วัดเวลาเล่นจริง (GDD Appendix A ข้อ 3)
 - **เจ้าของตัดสิน 2026-11-24:** "หันหน้าเข้าหากัน" ปิดเป็นค่าเริ่มต้น และหน้าเครดิตไม่ใส่ชื่อผู้พัฒนา
-- **ยังไม่มี:** เสียง, ภาพส่วนที่เหลือ (ไอคอน ป้ายปุ่ม พื้นหลังเมนู), tutorial, ป้ายปุ่มที่เปลี่ยนตาม input, ตัวเลือก "แสดงตัวเลข" (ทำได้แล้วเพราะมีภาพเม็ด), หน้าจอหมุนเครื่อง, เต็มจอบน Android
+- **ยังไม่มี:** เสียง, ภาพส่วนที่เหลือ (ไอคอน ป้ายปุ่ม กระดานในหน้า Title), tutorial, ป้ายปุ่มที่เปลี่ยนตาม input, ตัวเลือก "แสดงตัวเลข" (ทำได้แล้วเพราะมีภาพเม็ด), หน้าจอหมุนเครื่อง, เต็มจอบน Android
 - **ลำดับงานที่ตกลงกับเจ้าของ:** (1) 5/7 รอบ ✅ (2) พักเกมและบันทึก ✅ (3) จอย ✅ (4) งานค้าง Alpha ✅ แล้วต่อด้วย **Beta บน branch `dev`** คือ ตัวอักษรไทยแบบพิกเซล, งานภาพ codixel, เสียง, tutorial, มือถือและ PWA
 - **Beta ข้อ 1 ตัวอักษรไทย ✅ (2026-11-24):** ใช้ **Mali 13 px แบบ 1 บิต** (เจ้าของเปลี่ยนจาก Chakra Petch เป็นฟอนต์มีหัวในวันเดียวกัน GDD §10)
 - **เวลาเล่นจริงที่วัดได้:** เกมเต็ม 3 รอบใช้ 7–15 นาที น้อยกว่าที่ GDD ประมาณไว้ (15–30 นาที) เจ้าของเลือก**คง 3/5/7 ไว้** (2026-11-24) อย่าเสนอปรับซ้ำ
@@ -215,7 +215,7 @@
   - ตำแหน่งอยู่ใน `MENU_LAYOUT` (MainMenuScene) ซึ่ง playtest ใช้คลิก ส่วน dropdown อยู่ใน `src/ui/dropdown.ts`
   - คลิกเลือกด้วยเมาส์แล้วโฟกัสไม่ย้าย กด Enter ต่อจึงเริ่มเกมได้ (ทั้งแถวตัวเลือกและ dropdown)
   - **ใน playtest ต้องรอสักครู่หลังเปิด dropdown ก่อนคลิกตัวเลือก** เพราะ object ที่สร้างระหว่างคลิกจะรับ input ได้ตั้งแต่ frame ถัดไป
-- **Beta ข้อ 2 งานภาพ (กำลังทำ):** กระดาน ลูกแก้ว พื้นแคร่ไม้ไผ่ มือ ฝาหลุมตาย ตัวละคร AI ไอคอนแท็บ และโลโก้อยู่ในเกมแล้ว (เจ้าของอนุมัติทุกอย่าง) ต่อไปคือพื้นหลังเมนู ไอคอน และป้ายปุ่ม
+- **Beta ข้อ 2 งานภาพ (กำลังทำ):** กระดาน ลูกแก้ว พื้นแคร่ไม้ไผ่ มือ ฝาหลุมตาย ตัวละคร AI ไอคอนแท็บ โลโก้ และพื้นหลังเมนูอยู่ในเกมแล้ว (เจ้าของอนุมัติทุกอย่าง) ต่อไปคือไอคอน ป้ายปุ่ม และกระดานหยอดเองในหน้า Title
   - **แบบการเล่น 3 แบบในหน้าตั้งค่า** (`boardStyle` เจ้าของเลือก 2026-11-24): `marbles` เม็ด (ค่าเริ่มต้น), `hand` มือ, `numbers` ตัวเลขในหลุม มือกับวงกลมอยู่ใน `src/display/sowingHand.ts` และ `playtest/styles.mjs` ตรวจว่าทั้ง 3 แบบได้ผลการเดินเหมือนกัน
 - **เจ้าของตัดสิน 2026-11-24:**
   - ตัวละคร AI มีใน v1: น้องแก้ว (ง่าย), ลุงเคี่ยม (กลาง), ยายขุม (ยาก) ดู GDD §6

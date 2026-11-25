@@ -23,6 +23,8 @@ export class PreloaderScene extends Phaser.Scene {
     // Pixel art, drawn by tools/art/ (GDD §8).
     this.load.image('bamboo', 'assets/bamboo.png');
     this.load.image('board', 'assets/board.png');
+    this.load.image('bg-night', 'assets/bg-night.png');
+    this.load.image('bg-yard', 'assets/bg-yard.png');
     this.load.image('logo', 'assets/logo.png');
     this.load.image('logo-small', 'assets/logo-small.png');
     this.load.spritesheet('seeds', 'assets/seeds.png', { frameWidth: 8, frameHeight: 8 });

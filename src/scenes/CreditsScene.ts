@@ -3,7 +3,7 @@ import { CSS } from '../display/palette';
 import { onKeyDown } from '../input/keys';
 import { onPadAction } from '../input/gamepad';
 import { SceneKeys, type MainMenuData } from '../types/scenes';
-import { TEXT_SIZE, addButton, addText, createFocusFrame, frameAround, paintButton } from '../ui/widgets';
+import { TEXT_SIZE, addBackground, addButton, addText, createFocusFrame, frameAround, paintButton } from '../ui/widgets';
 
 /** "กลับ" button centre (base px), for playtests. */
 export const CREDITS_LAYOUT = { backY: 234 } as const;
@@ -22,6 +22,7 @@ export class CreditsScene extends Phaser.Scene {
     const { width } = this.scale;
     const line = (y: number, s: string, color: string = CSS.cream, size = TEXT_SIZE, bold = false) => addText(this, width / 2, y, s, size, color, bold);
 
+    addBackground(this, 'bg-night');
     line(14, 'เครดิต', CSS.gold, 18, true);
     line(40, 'หมากขุม: การละเล่นพื้นบ้านไทย', CSS.cream, 14, true);
     line(64, 'สร้างด้วย Phaser 4 · TypeScript · Vite');

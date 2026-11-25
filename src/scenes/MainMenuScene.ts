@@ -34,27 +34,27 @@ import {
   type Opponent,
 } from '../types/scenes';
 import { Dropdown } from '../ui/dropdown';
-import { addLogo } from '../ui/widgets';
+import { addBackground, addLogo } from '../ui/widgets';
 
 /** Positions (base px). Playtests click these, so keep them in sync with playtest/*.mjs. */
 export const MENU_LAYOUT = {
   logoY: 0,
   continueY: 18,
-  opponentY: 54,
+  opponentY: 53,
   opponentX: [150, 220, 290, 360],
   /** Dropdowns: centre x and width (left edge lines up with the opponent buttons). */
   dropdownX: 218,
   dropdownW: 200,
-  rulesetY: 82,
-  summaryY: 107,
-  lengthY: 130,
-  speedY: 158,
+  rulesetY: 81,
+  summaryY: 106,
+  lengthY: 132,
+  speedY: 161,
   speedX: [143, 199, 255, 311, 367],
   startX: 240,
-  startY: 191,
+  startY: 195,
   /** ตั้งค่า / สถิติ / เครดิต (MENU_PAGES) */
   pagesX: [176, 240, 304],
-  pagesY: 226,
+  pagesY: 231,
   hintY: 256,
 } as const;
 
@@ -134,6 +134,7 @@ export class MainMenuScene extends Phaser.Scene {
     const L = MENU_LAYOUT;
     const { width } = this.scale;
 
+    addBackground(this, 'bg-yard');
     addLogo(this, 'logo-small', L.logoY);
 
     // ── Continue a saved game (only when one exists) ──
@@ -189,7 +190,7 @@ export class MainMenuScene extends Phaser.Scene {
       color: CSS.pitShadow,
       bold: true,
       background: CSS.gold,
-      padding: { x: 8, y: 1 },
+      padding: { x: 8, y: 0 },
       fixedWidth: 160,
     })
       .setInteractive({ useHandCursor: true })

@@ -61,20 +61,20 @@ export default [
   },
   { name: 'full-game-over', action: 'screenshot' },
 
-  // Round count (R16): the menu's length dropdown is at (218, 130); its options are
-  // เกมสั้น / เกมเต็ม 3 / 5 / 7 รอบ at y 130 + 24, + 48, + 72, + 96. "เริ่มเกม" at (240, 191). ×2.
+  // Round count (R16): the menu's length dropdown is at (218, 132); its options are
+  // เกมสั้น / เกมเต็ม 3 / 5 / 7 รอบ at y 132 + 24, + 48, + 72, + 96. "เริ่มเกม" at (240, 195). ×2.
   { name: 'Esc = back to the menu', action: 'press', key: 'Escape' },
   { name: 'menu again', action: 'waitFor', expression: `game.scene.isActive('MainMenuScene')`, timeout: 5000 },
   { name: 'default is 3 rounds', action: 'expect', expect: { expression: `scene('MainMenuScene').rounds`, equals: 3 } },
-  { name: 'open the length dropdown', action: 'click', x: 2 * 218, y: 2 * 130 },
+  { name: 'open the length dropdown', action: 'click', x: 2 * 218, y: 2 * 132 },
   // Objects made during a click only take input from the next frame on: wait a moment.
   { name: 'the list is open', action: 'waitFor', expression: `scene('MainMenuScene').dropdownOpen`, timeout: 1000 },
   { name: 'let the list settle', action: 'wait', ms: 100 },
   { name: 'menu-length-dropdown', action: 'screenshot' },
-  { name: 'pick "เกมเต็ม · 7 รอบ"', action: 'click', x: 2 * 218, y: 2 * 226 },
+  { name: 'pick "เกมเต็ม · 7 รอบ"', action: 'click', x: 2 * 218, y: 2 * 228 },
   { name: 'menu now a 7-round full game', action: 'expect', expect: { expression: `[scene('MainMenuScene').mode, scene('MainMenuScene').rounds]`, equals: ['full', 7] } },
   { name: 'menu-7-rounds', action: 'screenshot' },
-  { name: 'click "เริ่มเกม"', action: 'click', x: 2 * 240, y: 2 * 191 },
+  { name: 'click "เริ่มเกม"', action: 'click', x: 2 * 240, y: 2 * 195 },
   {
     name: 'a 7-round full game starts',
     action: 'waitFor',

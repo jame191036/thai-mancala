@@ -18,7 +18,7 @@ import {
 } from '../settings';
 import { SceneKeys, type MainMenuData } from '../types/scenes';
 import type { PixelText } from '../display/pixelText';
-import { TEXT_SIZE, addButton, addText, createFocusFrame, frameAround, paintButton } from '../ui/widgets';
+import { TEXT_SIZE, addBackground, addButton, addText, createFocusFrame, frameAround, paintButton } from '../ui/widgets';
 
 export type SettingId = 'touch' | 'motion' | 'vibration' | 'facing' | 'style';
 
@@ -106,6 +106,7 @@ export class SettingsScene extends Phaser.Scene {
       },
     ];
 
+    addBackground(this, 'bg-night');
     addText(this, width / 2, 20, 'ตั้งค่า', 18, CSS.gold);
     this.rows = defs.map((def, r) => {
       const y = SETTINGS_LAYOUT.firstY + r * SETTINGS_LAYOUT.gapY;

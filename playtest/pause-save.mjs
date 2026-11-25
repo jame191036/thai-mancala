@@ -8,14 +8,14 @@ const PAUSED = `game.scene.isActive('PauseScene') && game.scene.isPaused('GameSc
 export default [
   reachMenu,
   { name: 'no saved game yet', action: 'expect', expect: { expression: `scene('MainMenuScene').hasSave`, equals: false } },
-  // Settings chosen now must survive the reload below (AC-S2): speed "ช้า" (202, 158), and
-  // "เกมเต็ม · 5 รอบ" from the length dropdown at (218, 130) (its option at y 130 + 72).
-  { name: 'pick speed ช้า', action: 'click', x: 2 * 199, y: 2 * 158 },
-  { name: 'open the length dropdown', action: 'click', x: 2 * 218, y: 2 * 130 },
+  // Settings chosen now must survive the reload below (AC-S2): speed "ช้า" (199, 161), and
+  // "เกมเต็ม · 5 รอบ" from the length dropdown at (218, 132) (its option at y 132 + 72).
+  { name: 'pick speed ช้า', action: 'click', x: 2 * 199, y: 2 * 161 },
+  { name: 'open the length dropdown', action: 'click', x: 2 * 218, y: 2 * 132 },
   // Objects made during a click only take input from the next frame on: wait a moment.
   { name: 'the list is open', action: 'waitFor', expression: `scene('MainMenuScene').dropdownOpen`, timeout: 1000 },
   { name: 'let the list settle', action: 'wait', ms: 100 },
-  { name: 'pick 5 rounds', action: 'click', x: 2 * 218, y: 2 * 202 },
+  { name: 'pick 5 rounds', action: 'click', x: 2 * 218, y: 2 * 204 },
   { name: 'a 5-round full game chosen', action: 'expect', expect: { expression: `[scene('MainMenuScene').mode, scene('MainMenuScene').rounds]`, equals: ['full', 5] } },
   // Keyboard: from "เริ่มเกม" ↑ speed, ↑ length, ↑ ruleset, then → = "แบบตามวิดีโอ".
   ...['speed', 'length', 'ruleset'].map((row) => ({ name: `↑ to ${row}`, action: 'press', key: 'ArrowUp' })),

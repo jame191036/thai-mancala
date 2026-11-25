@@ -6,7 +6,7 @@ import { onPadAction } from '../input/gamepad';
 import type { GameMode } from '../logic/types';
 import { GAME_MODES, clearStats, loadStats, totalGames, type PlayerStats, type Tally } from '../stats';
 import { OPPONENTS, OPPONENT_LABEL, SceneKeys, type MainMenuData } from '../types/scenes';
-import { TEXT_SIZE, addButton, addText, createFocusFrame, frameAround, paintButton } from '../ui/widgets';
+import { TEXT_SIZE, addBackground, addButton, addText, createFocusFrame, frameAround, paintButton } from '../ui/widgets';
 
 export type StatsChoice = 'back' | 'clear';
 const CHOICES: readonly StatsChoice[] = ['back', 'clear'];
@@ -49,6 +49,7 @@ export class StatsScene extends Phaser.Scene {
     this.cells = [];
     const { width } = this.scale;
 
+    addBackground(this, 'bg-night');
     addText(this, width / 2, 11, 'สถิติ', 18, CSS.gold);
     for (const m of GAME_MODES) {
       addText(this, MODE_X[m], 35, MODE_LABEL[m], TEXT_SIZE, CSS.gold);

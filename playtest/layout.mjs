@@ -66,6 +66,8 @@ const go = (key, data = {}) => {
 };
 const check = (what, key = now) => ({ name: what, action: 'expect', expect: { expression: `__layout('${key}')`, equals: 'ok' } });
 const run = (code) => ({ name: 'set up', action: 'eval', code });
+/** The picture behind everything on a menu screen. */
+const background = (key) => ({ name: `${now}: background ${key}`, action: 'expect', expect: { expression: `(() => { const o = scene('${now}').children.list[0]; return [o.texture?.key, o.x, o.y, o.width, o.height]; })()`, equals: [key, 0, 0, 480, 270] } });
 const shot = (name) => ({ name, action: 'screenshot' });
 
 const RECORDS = { maxCapture: [88, 88], maxRelay: [88, 88] };
@@ -108,9 +110,11 @@ export default [
   // ── Title, menu ──
   ...go('TitleScene'),
   check('title'),
+  background('bg-yard'),
   { name: 'the logo is on the title screen, on whole pixels', action: 'expect', expect: { expression: `scene('TitleScene').children.list.filter((o) => o.texture?.key === 'logo').map((o) => [o.x, o.y, o.width, o.height])`, equals: [[131, 38, 219, 64]] } },
   ...go('MainMenuScene'),
   check('menu, traditional rules'),
+  background('bg-yard'),
   { name: 'the small logo is on the menu, on whole pixels', action: 'expect', expect: { expression: `scene('MainMenuScene').children.list.filter((o) => o.texture?.key === 'logo-small').map((o) => [o.x, o.y, o.width, o.height])`, equals: [[173, 0, 135, 42]] } },
   run(`scene('MainMenuScene').ruleset = 'video'; scene('MainMenuScene').mode = 'full'; scene('MainMenuScene').rounds = 7; scene('MainMenuScene').refreshAll();`),
   check('menu, video rules, 7 rounds'),
@@ -119,12 +123,14 @@ export default [
   // ── Settings: the help line of every row ──
   ...go('SettingsScene'),
   ...[0, 1, 2, 3, 4, 5].flatMap((i) => [run(`scene('SettingsScene').setFocus(${i});`), check(`settings, focus ${i}`)]),
+  background('bg-night'),
   run(`scene('SettingsScene').setFocus(3);`),
   shot('settings'),
 
   // ── Stats: empty, with big numbers, and asking to clear ──
   ...go('StatsScene'),
   check('stats, empty'),
+  background('bg-night'),
   run(`const s = scene('StatsScene'); for (const m of Object.values(s.stats.results)) for (const t of Object.values(m)) t.p1 = t.p2 = t.draw = 888; s.stats.bestCapture = 88; s.stats.longestRelay = 88; s.stats.biggestWin = 88; s.fill();`),
   check('stats, big numbers'),
   run(`scene('StatsScene').setFocus('clear'); scene('StatsScene').choose('clear');`),
@@ -133,6 +139,7 @@ export default [
 
   ...go('CreditsScene'),
   check('credits'),
+  background('bg-night'),
   shot('credits'),
 
   // ── Result: every reason, both rulesets, against a person and the AI ──
@@ -147,6 +154,7 @@ export default [
   ]),
   ...go('GameOverScene', result('cannotFill', 'traditional', 'human', null)),
   check('result, draw'),
+  background('bg-night'),
   ...go('GameOverScene', result('roundLimit', 'traditional', 'human', 1)),
   shot('result'),
 
